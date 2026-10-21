@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Macroeconomic Stress Testing of Loan Defaults | ES 335</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="container header-container">
+      <div>
+        <h1>Macro-Economic Stress Testing for Retail Loan Defaults</h1>
+        <p class="subtitle">ES 335 Machine Learning | IIT Gandhinagar | Quantitative Credit Risk Portfolio</p>
+      </div>
+      <div class="badge">Static GitHub Pages Deployable</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card intro-card">
+      <h2>Project Overview & Research Question</h2>
+      <p>
+        <strong>Core Research Question:</strong> Do macroeconomic indicators (unemployment rate, CPI inflation, Federal funds rate)
+        significantly improve retail loan default prediction compared to traditional credit models relying strictly on individual borrower profiles?
+      </p>
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <span class="metric-title">Unit of Analysis</span>
+          <span class="metric-val">Single Originated Loan</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-title">Temporal Leakage Check</span>
+          <span class="metric-val">Point-in-Time pd.merge_asof</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-title">Validation Method</span>
+          <span class="metric-val">Chronological OOT (2017)</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-title">Target Objective</span>
+          <span class="metric-val">Calibrated PD: P(Y=1|X)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Stress Testing Simulator -->
+    <section class="card interactive-card">
+      <h2>Live Macroeconomic Stress Testing Simulator</h2>
+      <p>
+        Adjust macroeconomic stress scenario sliders below. The client-side logistic sigmoid formula evaluates the predicted default probability in real time:
+      </p>
+      <div class="formula-box">
+        <code>P(Default) = 1 / (1 + e<sup>-(β₀ + Σ βᵢXᵢ)</sup>)</code>
+      </div>
+
+      <div class="simulator-layout">
+        <!-- Controls -->
+        <div class="controls-panel">
+          <h3>Macroeconomic Stress Levers</h3>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="unemployment-slider">National Unemployment Rate (UNRATE):</label>
+              <span id="unemployment-val" class="slider-val">5.0%</span>
+            </div>
+            <input type="range" id="unemployment-slider" min="3.0" max="15.0" step="0.1" value="5.0">
+            <small class="hint">Baseline: 4.5% | Severe Recession Stress: 10.0%+</small>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="cpi-slider">Annual CPI Inflation Rate:</label>
+              <span id="cpi-val" class="slider-val">2.5%</span>
+            </div>
+            <input type="range" id="cpi-slider" min="0.0" max="12.0" step="0.1" value="2.5">
+            <small class="hint">Baseline: 2.0% | Stagflation Stress: 8.0%+</small>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="fedfunds-slider">Federal Funds Effective Rate:</label>
+              <span id="fedfunds-val" class="slider-val">2.0%</span>
+            </div>
+            <input type="range" id="fedfunds-slider" min="0.0" max="10.0" step="0.25" value="2.0">
+            <small class="hint">Baseline: 1.5% | Monetary Tightening: 5.5%+</small>
+          </div>
+
+          <h3 style="margin-top: 1.5rem;">Representative Borrower Profile</h3>
+          <div class="borrower-inputs">
+            <div>
+              <label for="fico-input">FICO Score:</label>
+              <input type="number" id="fico-input" value="690" min="500" max="850">
+            </div>
+            <div>
+              <label for="dti-input">DTI (%):</label>
+              <input type="number" id="dti-input" value="18" min="0" max="60">
+            </div>
+            <div>
+              <label for="income-input">Annual Income ($):</label>
+              <input type="number" id="income-input" value="70000" min="15000" max="500000" step="5000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Display -->
+        <div class="output-panel">
+          <h3>Stress Tested Output</h3>
+          <div class="gauge-container">
+            <div class="gauge-circle" id="risk-gauge">
+              <span id="pd-percentage">14.2%</span>
+              <span class="gauge-label">Probability of Default</span>
+            </div>
+          </div>
+
+          <div class="risk-badge" id="risk-status">Moderate Risk</div>
+
+          <div class="scenario-summary">
+            <h4>Stress Scenario Delta</h4>
+            <p id="delta-summary">Default odds changed by <strong>+0.0%</strong> relative to benign baseline.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Methodology & Rubric Defense -->
+    <section class="card methodology-card">
+      <h2>Methodology & Statistical Defenses</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Zero Look-Ahead Bias</h3>
+          <p>
+            Macro indicators are lagged by 1 month and merged using <code>pd.merge_asof</code> on origination date, guaranteeing no future economic information leaks into historical loan decisions.
+          </p>
+        </div>
+        <div>
+          <h3>Chronological Out-of-Time (OOT) Split</h3>
+          <p>
+            Models are trained on 2013–2016 originations and tested on 2017 originations. Standard K-fold cross-validation is avoided to prevent temporal correlation leakage.
+          </p>
+        </div>
+        <div>
+          <h3>Econometric Odds Ratios</h3>
+          <p>
+            Coefficients from <code>statsmodels.api.Logit</code> allow direct derivation of odds multipliers (e<sup>β</sup>), proving macroeconomic significance with rigorous p-values.
+          </p>
+        </div>
+        <div>
+          <h3>Probability Calibration</h3>
+          <p>
+            Class imbalance is handled via balanced loss weighting and validated using PR-AUC and Brier Score Loss to confirm reliable probability outputs.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-content">
+      <p>ES 335 Machine Learning Course Project | IIT Gandhinagar</p>
+      <p>Target Quantitative Risk & Analytics Portfolio (Barclays, J.P. Morgan, Goldman Sachs)</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
