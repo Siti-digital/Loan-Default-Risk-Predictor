@@ -1,18 +1,19 @@
 # Project Methodology & Statistical Rigor Roadmap
 
 **Course:** ES 335 Machine Learning | IIT Gandhinagar  
-**Project:** Macroeconomic Stress Testing on Retail Loan Defaults  
+**Project:** Macro-Aware Credit Risk: Does the Local / Systematic Economy at Origination Improve Default Prediction?  
 **Dataset Coverage:** 2007 – 2018 (LendingClub Micro-data & FRED Macroeconomic Series)
 
 ---
 
 ## 1. Executive Summary: Core Methodological Upgrades
 
-Following an econometric and machine learning integrity audit, this project enforces three foundational design principles aligned with banking stress-testing standards (Basel III / CCAR) and the ES 335 course rubric:
+Following an econometric and machine learning integrity audit, this project enforces foundational design principles aligned with banking stress-testing standards (Basel III / CCAR) and the ES 335 course rubric:
 
-1. **Elimination of Right-Censoring (Phase 4):** Restrict analysis strictly to matured **36-month installment loans** with completed outcomes (`Fully Paid` vs `Charged Off`). Ongoing `Current` loans are dropped only after maturity cutoff verification.
-2. **Optimal Chronological Out-of-Time (OOT) Split (Phase 5):** Replaces arbitrary random or post-2016 splits. Trains on **2007–2014** (capturing the 2008–2010 Great Recession macroeconomic shock) and tests on **2015** (fully matured by the 2018 dataset cutoff with 0% censoring).
+1. **Elimination of Right-Censoring (Phase 4):** Restrict analysis strictly to matured **36-month installment loans** with completed outcomes (`Fully Paid` vs `Charged Off`). Ongoing `Current` loans and unresolved late loans are dropped after empirical maturity cutoff verification.
+2. **Optimal Chronological Out-of-Time (OOT) Split (Phase 5):** Replaces arbitrary random or post-2016 splits. Trains on **2007–2014** (capturing the 2008–2010 Great Recession macroeconomic shock) and tests on **2015** (fully matured by the 2018 dataset cutoff with 0% censoring). Expanding-window CV validates on 2013 and 2014.
 3. **Probability Calibration Preservation (Phase 5):** Discards `class_weight='balanced'` in favor of **unweighted modeling (`class_weight=None`)** to protect continuous Probability of Default (PD) calibration, reliability curves, and Brier score loss.
+4. **Separation of Risk Tiers & Clean Feature Groups:** Excludes lender-priced variables (`int_rate`, `installment`, `grade`, `sub_grade`) from borrower-only baselines (Model B) and macro-augmented models (Model C & D) to evaluate pure origination prediction without endogenous lender pricing.
 
 ---
 
@@ -20,18 +21,18 @@ Following an econometric and machine learning integrity audit, this project enfo
 
 ### Phase 4: Cohort Selection & Pre-Origination Feature Engineering
 
-* **Change 1 — 36-Month Matured Cohort Isolation:**
-  * **Problem:** LendingClub loans are 36 or 60 months long. The dataset ends in late 2018. If 60-month loans or post-2015 loans are tested after dropping `Current` loans, the remaining records suffer severe right-censoring bias (only early defaults/prepayments remain).
+* **Change 1 — 36-Month Matured Cohort Isolation & Target Resolution:**
+  * **Problem:** LendingClub loans are 36 or 60 months long. The dataset ends in late 2018. If 60-month loans or post-2015 loans are tested after dropping `Current` loans, the remaining records suffer severe right-censoring bias (only early defaults/prepayments remain; 2017 is 59.88% unresolved).
   * **Implementation:**
     * Filter loans strictly to: `term.str.contains('36')`.
-    * Retain only terminal loan outcomes: `loan_status.isin(['Fully Paid', 'Charged Off'])`.
-    * Map binary target: $Y = 1$ for `Charged Off` (Default) and $Y = 0$ for `Fully Paid` (Non-Default).
+    * Include genuine completed outcomes:
+      - Default ($Y=1$): `Charged Off`, `Default` (40 genuine pre-charge-off default loans), `Does not meet the credit policy. Status:Charged Off` (761 legacy loans).
+      - Fully Paid ($Y=0$): `Fully Paid`, `Does not meet the credit policy. Status:Fully Paid` (1,988 legacy loans).
+    * Explicitly drop right-censored unresolved loans: `Current`, `In Grace Period`, `Late (16-30 days)`, `Late (31-120 days)`.
 * **Pre-Origination Feature Construction:**
   * Compute average FICO score: $\text{FICO} = \frac{\text{fico\_range\_low} + \text{fico\_range\_high}}{2}$.
-  * Macro-Borrower stress interaction features:
-    * Debt pressure under inflation: $\text{dti\_x\_inflation} = \text{dti} \times \text{CPI\_YoY\_Inflation}$
-    * Income cushion under unemployment: $\text{income\_to\_unemp} = \frac{\text{annual\_inc}}{\text{UNRATE}}$
-    * Debt service vs labor market: $\text{installment\_x\_unemp} = \text{installment} \times \text{UNRATE}$
+  * Macroeconomic predictors (stationary, 2-month publication lag): `UNRATE`, `UNRATE_change_6m`, `CPI_YoY_Inflation`.
+  * **Interaction Policy:** Ad-hoc nonlinear interaction terms (`dti_x_inflation`, `income_to_unemp`, `installment_x_unemp`) are **rejected from the primary baseline** to avoid multicollinearity and arbitrary feature inflation. Primary models use clean linear main effects; economically motivated interactions (`DTI × UNRATE`, `FICO × UNRATE`) are preserved strictly as optional ablation experiments.
   * Natural log transforms on skewed monetary variables: $\ln(1 + \text{annual\_inc})$, $\ln(1 + \text{loan\_amnt})$.
 
 ---
@@ -59,7 +60,9 @@ Following an econometric and machine learning integrity audit, this project enfo
 
 | Rubric Dimension | Methodological Flaw Prevented | Verified Mechanism |
 | :--- | :--- | :--- |
-| **Cohort Integrity** | Right-censoring of incomplete loans | Filter to 36-month tenure; maturity cutoff fixed at end of 2015. |
-| **Validation Design** | Look-ahead temporal data leakage | Chronological OOT split (2007–2014 Train vs 2015 Test). |
+| **Cohort Integrity** | Right-censoring of incomplete loans | Filter to 36-month tenure; maturity cutoff fixed at end of 2015 (2017 rejected due to 60% censoring). |
+| **Validation Design** | Look-ahead temporal data leakage | Chronological OOT split (2007–2014 Train vs 2015 Holdout Test). |
 | **Economic Variation** | Training during zero-variance macro conditions | Training window incorporates the 2008–2009 recession shock. |
 | **Probability Calibration** | Distorted PDs from artificial class balancing | `class_weight=None`; calibrated base-rate probability outputs. |
+| **Feature Endogeneity** | Confounding borrower risk with lender pricing | `int_rate`, `installment`, `grade`, `sub_grade` excluded from Models B, C, D; isolated in Lender Benchmark. |
+| **Interaction Policy** | Arbitrary product inflation & collinearity | Primary models use clean main effects; `DTI × UNRATE` and `FICO × UNRATE` evaluated strictly as optional ablations. |

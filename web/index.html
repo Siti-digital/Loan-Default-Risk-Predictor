@@ -76,11 +76,14 @@
     <section class="card interactive-card">
       <h2>Origination-Time Macroeconomic Sensitivity & What-If Explorer</h2>
       <p>
-        Adjust origination-time macroeconomic condition levers below. Holding borrower characteristics constant, this tool computes the model-estimated Probability of Default (PD) using the client-side logistic sigmoid engine:
+        Adjust origination-time macroeconomic condition levers below. Holding borrower characteristics constant, this tool computes the model-estimated Probability of Default (PD) for <strong>Model C (Borrower + Macro Logistic Regression)</strong> using the client-side logistic sigmoid engine:
       </p>
       <div class="formula-box">
         <code>P(Default) = 1 / (1 + e<sup>-(β₀ + Σ βᵢ · (Xᵢ - μᵢ) / σᵢ)</sup>)</code>
       </div>
+      <p class="architecture-note" style="font-size: 0.85rem; color: #64748b; margin-top: -0.5rem; margin-bottom: 1rem;">
+        <em>Note: Preprocessing means (μ) and standard deviations (σ) along with linear weights (β) are strictly derived from Model C. Model D (LightGBM) is a non-linear gradient-boosted decision tree ensemble evaluated offline in Python benchmarks; it is not represented by linear coefficients or sigmoid approximations.</em>
+      </p>
 
       <div class="simulator-layout">
         <!-- Controls -->

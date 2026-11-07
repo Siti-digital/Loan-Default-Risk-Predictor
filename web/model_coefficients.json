@@ -1,5 +1,6 @@
 {
-  "description": "Baseline Econometric Logit Weights for Macro-Aware Sensitivity Explorer",
+  "model_id": "Model_C_Logit",
+  "description": "Fitted Model C (Borrower + Macro) Logistic Regression Parameters (Pre-Training Baseline)",
   "intercept": -1.75,
   "weights": {
     "fico_score": -0.45,

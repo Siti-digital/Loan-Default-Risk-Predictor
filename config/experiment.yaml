@@ -1,0 +1,235 @@
+# ==============================================================================
+# ES 335: Macro-Aware Credit Risk Experiment Configuration
+# Project: Does the Local / Systematic Economy at Origination Improve Default Prediction?
+# Course: ES 335 Machine Learning | IIT Gandhinagar
+# Status: FROZEN METHODOLOGY (Pre-Phase 4 Alignment)
+# ==============================================================================
+
+research_question: >
+  Does incorporating macroeconomic conditions available at loan origination
+  significantly improve retail loan default prediction (in ranking discrimination via PR-AUC/ROC-AUC
+  and probability calibration via Brier score) beyond individual borrower and loan application characteristics?
+
+# ------------------------------------------------------------------------------
+# 1. Dataset, Cohort, and Target Definition
+# ------------------------------------------------------------------------------
+cohort:
+  term: "36 months"
+  term_filter_pattern: "36"
+  maturity_cutoff_date: "2015-12-31"
+  maturity_threshold_unresolved_pct: 0.50
+  audit_verified_unresolved_pct_2015: 0.0519
+  audit_verified_unresolved_pct_dec2015: 0.3230
+
+target:
+  name: "default"
+  type: "binary"
+  positive_label: 1  # Default / Charged Off
+  negative_label: 0  # Fully Paid
+
+status_mapping:
+  resolved_default:
+    - "Charged Off"
+    - "Default"
+    - "Does not meet the credit policy. Status:Charged Off"
+  resolved_paid:
+    - "Fully Paid"
+    - "Does not meet the credit policy. Status:Fully Paid"
+  unresolved_excluded:
+    - "Current"
+    - "In Grace Period"
+    - "Late (31-120 days)"
+    - "Late (16-30 days)"
+
+# ------------------------------------------------------------------------------
+# 2. Frozen Chronological Train / Validation / Test Split
+# ------------------------------------------------------------------------------
+temporal_split:
+  design: "Chronological Out-of-Time (OOT) with Expanding-Window Validation"
+  train_window:
+    start_date: "2007-01-01"
+    end_date: "2014-12-31"
+    n_loans: 337996
+    default_rate: 0.1320
+    economic_regimes: "Pre-crisis peak (2007), Great Recession shock (2008-2010), Recovery (2011-2014)"
+  
+  expanding_window_cv:
+    - fold: 1
+      train_end: "2012-12-31"
+      val_start: "2013-01-01"
+      val_end: "2013-12-31"
+      val_n_loans: 100422
+    - fold: 2
+      train_end: "2013-12-31"
+      val_start: "2014-01-01"
+      val_end: "2014-12-31"
+      val_n_loans: 162570
+
+  holdout_test_window:
+    start_date: "2015-01-01"
+    end_date: "2015-12-31"
+    n_loans: 283026
+    default_rate: 0.1489
+    unresolved_rate: 0.000519
+    status: "FROZEN_AND_UNTOUCHED"
+    restrictions:
+      - "No hyperparameter tuning"
+      - "No feature selection"
+      - "No preprocessing fitting"
+      - "No model selection"
+      - "No calibration selection"
+      - "No threshold tuning"
+
+# ------------------------------------------------------------------------------
+# 3. Feature Group Allowlist
+# ------------------------------------------------------------------------------
+features:
+  borrower_numerical:
+    - "annual_inc"
+    - "dti"
+    - "fico_range_low"
+    - "fico_range_high"
+    - "open_acc"
+    - "pub_rec"
+    - "revol_util"
+    - "mort_acc"
+    - "loan_amnt"
+  
+  borrower_categorical:
+    - "home_ownership"
+  
+  macro_primary:
+    - "UNRATE"            # National Civilian Unemployment Rate (%)
+    - "UNRATE_change_6m"   # 6-Month Change in National Unemployment Rate (percentage points)
+    - "CPI_YoY_Inflation" # 12-Month Change in CPI (%)
+
+  lender_benchmark_additional:
+    - "int_rate"
+    - "installment"
+    - "grade"
+    - "sub_grade"
+
+  forbidden_post_origination_leakage:
+    - "total_pymnt"
+    - "total_pymnt_inv"
+    - "total_rec_prncp"
+    - "total_rec_int"
+    - "total_rec_late_fee"
+    - "recoveries"
+    - "collection_recovery_fee"
+    - "last_pymnt_d"
+    - "last_pymnt_amnt"
+    - "next_pymnt_d"
+    - "last_credit_pull_d"
+    - "out_prncp"
+    - "out_prncp_inv"
+    - "settlement_status"
+    - "debt_settlement_flag"
+
+# ------------------------------------------------------------------------------
+# 4. Macroeconomic Publication Alignment
+# ------------------------------------------------------------------------------
+macro_alignment:
+  publication_lag_months: 2
+  shift_direction: "backward"
+  inflation_calculation: "pre_lag_shift"
+  momentum_calculation: "pre_lag_shift"
+  leakage_assertion: "issue_date > economic_reference_date"
+  min_required_lag_months: 2
+
+# ------------------------------------------------------------------------------
+# 5. Interaction Policy
+# ------------------------------------------------------------------------------
+interactions:
+  primary_models: "NONE"
+  optional_ablations:
+    dti_x_unemp:
+      feature_1: "dti"
+      feature_2: "UNRATE"
+      economic_rationale: "Tests if debt-burdened borrowers experience amplified default sensitivity during labor-market contractions."
+    fico_x_unemp:
+      feature_1: "fico_avg"
+      feature_2: "UNRATE"
+      economic_rationale: "Tests if prime credit cushions provide asymmetric protection against systematic unemployment spikes."
+
+# ------------------------------------------------------------------------------
+# 6. Model Suite & Calibration Policy
+# ------------------------------------------------------------------------------
+calibration_policy:
+  primary_class_weight: null # Preserves natural default base-rate (~13.2% train / ~14.9% test)
+  economic_rationale: >
+    Credit risk decisioning, expected loss (EL = PD * LGD * EAD), and Brier score calibration
+    require true base-rate Probability of Default (PD) outputs. Artificially setting class_weight='balanced'
+    forces the logistic intercept to predict an ungrounded ~50% prevalence, distorting calibration curves.
+  weighted_model_policy: "OPTIONAL_ABLATION_ONLY" # Available for sensitivity testing, never mandatory.
+
+models:
+  model_a:
+    name: "Historical Baseline"
+    type: "Empirical base rate predictor"
+    features: "none"
+  
+  model_b:
+    name: "Borrower-Only Logistic Regression"
+    type: "statsmodels.Logit & sklearn LogisticRegression"
+    class_weight: null
+    features: "borrower_numerical + borrower_categorical"
+  
+  model_c:
+    name: "Borrower + Macro Logistic Regression"
+    type: "statsmodels.Logit & sklearn LogisticRegression"
+    class_weight: null
+    features: "borrower_numerical + borrower_categorical + macro_primary"
+  
+  model_d:
+    name: "Borrower + Macro LightGBM"
+    type: "lightgbm.LGBMClassifier"
+    class_weight: null
+    features: "borrower_numerical + borrower_categorical + macro_primary"
+    comparison_model: "Borrower-Only LightGBM"
+  
+  lender_benchmark:
+    name: "Lender-Information Benchmark"
+    type: "sklearn LogisticRegression"
+    features: "borrower_numerical + borrower_categorical + lender_benchmark_additional"
+
+# ------------------------------------------------------------------------------
+# 7. Evaluation Metrics & Statistical Inference
+# ------------------------------------------------------------------------------
+evaluation:
+  primary_ranking_metric: "PR-AUC"
+  secondary_ranking_metric: "ROC-AUC"
+  calibration_metric: "Brier Score Loss"
+  calibration_diagnostics:
+    - "Reliability curve (calibration_curve)"
+    - "Calibration slope and intercept"
+  classification_metrics:
+    - "Precision"
+    - "Recall"
+    - "F1-Score"
+    - "Confusion Matrix"
+
+statistical_inference:
+  cluster_variable: "issue_date" # Month-clustered standard errors in statsmodels
+  uncertainty_method: "Time-block / Month-level bootstrap for test metric deltas"
+  avoid_methods: "Ordinary loan-level bootstrap (invalid for shared macro observations)"
+  small_cluster_limitation: >
+    The 2015 holdout test period contains exactly 12 monthly clusters (G = 12).
+    In small-cluster regimes (G < 30-50), cluster-robust standard errors and cluster bootstrap
+    confidence intervals are subject to downward bias and limited statistical power.
+    Findings must be interpreted with documented epistemic humility:
+    do not overstate statistical certainty; corroborate holdout test results with expanding-window CV (2013-2014).
+  causal_claims: "STRICTLY_PROHIBITED"
+
+# ------------------------------------------------------------------------------
+# 8. Web Sensitivity Explorer Alignment
+# ------------------------------------------------------------------------------
+web_simulator:
+  concept: "Origination-Time Sensitivity Explorer (NOT a lifetime forecasting tool)"
+  clamped_ranges:
+    UNRATE: [4.0, 10.0]
+    CPI_YoY_Inflation: [-2.0, 5.5]
+    UNRATE_change_6m: [-1.5, 2.5]
+  inference_engine: "Client-side logistic sigmoid with exact exported scaler parameters and weights"
+  lightgbm_policy: "Reported via static evaluation tables; never faked with linear sigmoid"
+

@@ -1,9 +1,12 @@
 // Client-side Logistic Sigmoid Inference Engine for Macroeconomic Sensitivity Explorer
+// Strictly evaluates Model C (Borrower + Macro Logistic Regression)
 // Formula: P(Default) = 1 / (1 + exp(-(beta_0 + sum(beta_i * (X_i - mu_i) / sigma_i))))
+// Note: Model D (LightGBM) is evaluated offline in Python; tree ensembles are NOT approximated by this sigmoid formula.
 
-// Default baseline parameters (populated dynamically from model_coefficients.json once models are trained)
+// Default baseline parameters (populated dynamically from model_coefficients.json once Model C is trained)
 let modelParams = {
-  description: "Illustrative Baseline Logit Weights for Macro-Aware Sensitivity Explorer",
+  model_id: "Model_C_Logit",
+  description: "Fitted Model C (Borrower + Macro) Logistic Regression Parameters",
   intercept: -1.75,
   weights: {
     fico_score: -0.45,
