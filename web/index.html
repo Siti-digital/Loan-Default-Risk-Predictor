@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Macroeconomic Stress Testing of Loan Defaults | ES 335</title>
+  <title>Macroeconomic Sensitivity Explorer | ES 335 Credit Risk</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <div class="container header-container">
       <div>
-        <h1>Macro-Economic Stress Testing for Retail Loan Defaults</h1>
-        <p class="subtitle">ES 335 Machine Learning | IIT Gandhinagar | Quantitative Credit Risk Portfolio</p>
+        <h1>Macro-Aware Credit Risk: Origination-Time Sensitivity Explorer</h1>
+        <p class="subtitle">ES 335 Machine Learning | IIT Gandhinagar | Quantitative Risk & Analytics</p>
       </div>
       <div class="badge">Static GitHub Pages Deployable</div>
     </div>
@@ -21,21 +21,21 @@
     <section class="card intro-card">
       <h2>Project Overview & Research Question</h2>
       <p>
-        <strong>Core Research Question:</strong> Do macroeconomic indicators (unemployment rate, CPI inflation, Federal funds rate)
+        <strong>Core Research Question:</strong> Do macroeconomic indicators (civilian unemployment rate, 6-month unemployment change, CPI inflation)
         significantly improve retail loan default prediction compared to traditional credit models relying strictly on individual borrower profiles?
       </p>
       <div class="metrics-grid">
         <div class="metric-box">
           <span class="metric-title">Unit of Analysis</span>
-          <span class="metric-val">Single Originated Loan</span>
+          <span class="metric-val">Single 36-Month Loan</span>
         </div>
         <div class="metric-box">
           <span class="metric-title">Temporal Leakage Check</span>
-          <span class="metric-val">Point-in-Time pd.merge_asof</span>
+          <span class="metric-val">2-Month Publication Lag</span>
         </div>
         <div class="metric-box">
           <span class="metric-title">Validation Method</span>
-          <span class="metric-val">Chronological OOT (2017)</span>
+          <span class="metric-val">Out-of-Time 2015 Holdout</span>
         </div>
         <div class="metric-box">
           <span class="metric-title">Target Objective</span>
@@ -44,68 +44,96 @@
       </div>
     </section>
 
-    <!-- Interactive Stress Testing Simulator -->
+    <!-- Model Comparison Architecture -->
+    <section class="card architecture-card">
+      <h2>Experimental Model Architecture</h2>
+      <p>Models are strictly separated to isolate the marginal predictive power of macroeconomic conditions at origination:</p>
+      <div class="model-cards-grid">
+        <div class="model-card">
+          <span class="model-tag">Model A</span>
+          <h4>Historical Baseline</h4>
+          <p>Predicts empirical training base-rate default probability (uninformed baseline).</p>
+        </div>
+        <div class="model-card">
+          <span class="model-tag">Model B</span>
+          <h4>Borrower-Only Logit</h4>
+          <p>Application features at origination. Excludes lender pricing (<code>int_rate</code>, <code>installment</code>, <code>grade</code>).</p>
+        </div>
+        <div class="model-card">
+          <span class="model-tag">Model C</span>
+          <h4>Borrower + Macro Logit</h4>
+          <p>Borrower attributes plus conservative 2-month lagged stationary macro series (UNRATE, change, CPI).</p>
+        </div>
+        <div class="model-card">
+          <span class="model-tag">Model D</span>
+          <h4>Borrower + Macro LightGBM</h4>
+          <p>Gradient boosted trees on Model C features to capture potential non-linearities. Evaluated separately in Python.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Sensitivity Explorer -->
     <section class="card interactive-card">
-      <h2>Live Macroeconomic Stress Testing Simulator</h2>
+      <h2>Origination-Time Macroeconomic Sensitivity & What-If Explorer</h2>
       <p>
-        Adjust macroeconomic stress scenario sliders below. The client-side logistic sigmoid formula evaluates the predicted default probability in real time:
+        Adjust origination-time macroeconomic condition levers below. Holding borrower characteristics constant, this tool computes the model-estimated Probability of Default (PD) using the client-side logistic sigmoid engine:
       </p>
       <div class="formula-box">
-        <code>P(Default) = 1 / (1 + e<sup>-(β₀ + Σ βᵢXᵢ)</sup>)</code>
+        <code>P(Default) = 1 / (1 + e<sup>-(β₀ + Σ βᵢ · (Xᵢ - μᵢ) / σᵢ)</sup>)</code>
       </div>
 
       <div class="simulator-layout">
         <!-- Controls -->
         <div class="controls-panel">
-          <h3>Macroeconomic Stress Levers</h3>
+          <h3>Origination Macroeconomic Levers (Clamped to Observed Training Ranges)</h3>
 
           <div class="control-group">
             <div class="control-header">
               <label for="unemployment-slider">National Unemployment Rate (UNRATE):</label>
               <span id="unemployment-val" class="slider-val">5.0%</span>
             </div>
-            <input type="range" id="unemployment-slider" min="3.0" max="15.0" step="0.1" value="5.0">
-            <small class="hint">Baseline: 4.5% | Severe Recession Stress: 10.0%+</small>
+            <input type="range" id="unemployment-slider" min="4.0" max="10.0" step="0.1" value="5.0">
+            <small class="hint">Observed Training Range: 4.4% (Late 2007) to 10.0% (Oct 2009 Recession Peak)</small>
           </div>
 
           <div class="control-group">
             <div class="control-header">
-              <label for="cpi-slider">Annual CPI Inflation Rate:</label>
-              <span id="cpi-val" class="slider-val">2.5%</span>
+              <label for="cpi-slider">CPI Year-over-Year Inflation:</label>
+              <span id="cpi-val" class="slider-val">2.0%</span>
             </div>
-            <input type="range" id="cpi-slider" min="0.0" max="12.0" step="0.1" value="2.5">
-            <small class="hint">Baseline: 2.0% | Stagflation Stress: 8.0%+</small>
+            <input type="range" id="cpi-slider" min="-2.0" max="5.5" step="0.1" value="2.0">
+            <small class="hint">Observed Training Range: -2.1% (July 2009 Deflation) to 5.4% (July 2008 Commodity Peak)</small>
           </div>
 
           <div class="control-group">
             <div class="control-header">
-              <label for="fedfunds-slider">Federal Funds Effective Rate:</label>
-              <span id="fedfunds-val" class="slider-val">2.0%</span>
+              <label for="unemp-change-slider">6-Month Change in Unemployment:</label>
+              <span id="unemp-change-val" class="slider-val">0.0%</span>
             </div>
-            <input type="range" id="fedfunds-slider" min="0.0" max="10.0" step="0.25" value="2.0">
-            <small class="hint">Baseline: 1.5% | Monetary Tightening: 5.5%+</small>
+            <input type="range" id="unemp-change-slider" min="-1.5" max="2.5" step="0.1" value="0.0">
+            <small class="hint">Observed Training Range: -1.2% (Rapid Recovery) to +2.3% (Acute Shock)</small>
           </div>
 
-          <h3 style="margin-top: 1.5rem;">Representative Borrower Profile</h3>
+          <h3 style="margin-top: 1.5rem;">Representative Borrower Application Profile</h3>
           <div class="borrower-inputs">
             <div>
               <label for="fico-input">FICO Score:</label>
-              <input type="number" id="fico-input" value="690" min="500" max="850">
+              <input type="number" id="fico-input" value="690" min="660" max="850">
             </div>
             <div>
               <label for="dti-input">DTI (%):</label>
-              <input type="number" id="dti-input" value="18" min="0" max="60">
+              <input type="number" id="dti-input" value="18" min="0" max="40">
             </div>
             <div>
               <label for="income-input">Annual Income ($):</label>
-              <input type="number" id="income-input" value="70000" min="15000" max="500000" step="5000">
+              <input type="number" id="income-input" value="70000" min="20000" max="300000" step="5000">
             </div>
           </div>
         </div>
 
         <!-- Output Display -->
         <div class="output-panel">
-          <h3>Stress Tested Output</h3>
+          <h3>Model-Based Sensitivity Estimate</h3>
           <div class="gauge-container">
             <div class="gauge-circle" id="risk-gauge">
               <span id="pd-percentage">14.2%</span>
@@ -116,10 +144,20 @@
           <div class="risk-badge" id="risk-status">Moderate Risk</div>
 
           <div class="scenario-summary">
-            <h4>Stress Scenario Delta</h4>
+            <h4>Macro Sensitivity Delta</h4>
             <p id="delta-summary">Default odds changed by <strong>+0.0%</strong> relative to benign baseline.</p>
           </div>
         </div>
+      </div>
+
+      <!-- Critical Econometric Disclaimers -->
+      <div class="disclaimer-box">
+        <h4>Methodological & Econometric Scope Disclaimers</h4>
+        <ul>
+          <li><strong>Not a Lifetime Forecasting Tool:</strong> This model estimates default probability based strictly on economic conditions prevailing <em>at origination</em>. It does NOT predict how an active loan performs if unemployment spikes 18 months into repayment (a hazard model with time-varying covariates is required for lifetime trajectory stress testing).</li>
+          <li><strong>Observational Association, Not Causality:</strong> Estimated coefficients capture predictive associations across vintages and do not establish causal treatment effects.</li>
+          <li><strong>Interpolation Only:</strong> Slider ranges are strictly clamped to the empirical historical bounds observed during the 2007–2014 training window to prevent ungrounded extrapolation.</li>
+        </ul>
       </div>
     </section>
 
@@ -128,27 +166,16 @@
       <h2>Methodology & Statistical Defenses</h2>
       <div class="grid-2">
         <div>
-          <h3>Zero Look-Ahead Bias</h3>
+          <h3>Rigorous Out-of-Time (OOT) Split</h3>
           <p>
-            Macro indicators are lagged by 1 month and merged using <code>pd.merge_asof</code> on origination date, guaranteeing no future economic information leaks into historical loan decisions.
+            Avoids standard random K-Fold cross-validation which leaks temporal dependencies. 
+            Trains chronologically on <strong>2007–2014</strong> (including the Great Recession shock) and validates out-of-time on the fully matured <strong>2015 cohort</strong> (0.05% unresolved rate).
           </p>
         </div>
         <div>
-          <h3>Chronological Out-of-Time (OOT) Split</h3>
+          <h3>Zero Look-Ahead Macro Alignment</h3>
           <p>
-            Models are trained on 2013–2016 originations and tested on 2017 originations. Standard K-fold cross-validation is avoided to prevent temporal correlation leakage.
-          </p>
-        </div>
-        <div>
-          <h3>Econometric Odds Ratios</h3>
-          <p>
-            Coefficients from <code>statsmodels.api.Logit</code> allow direct derivation of odds multipliers (e<sup>β</sup>), proving macroeconomic significance with rigorous p-values.
-          </p>
-        </div>
-        <div>
-          <h3>Probability Calibration</h3>
-          <p>
-            Class imbalance is handled via balanced loss weighting and validated using PR-AUC and Brier Score Loss to confirm reliable probability outputs.
+            Macro series are shifted by a conservative <strong>2-month publication lag</strong>, ensuring that loans originated on the 1st of month <em>t</em> receive macroeconomic data published and verified available prior to origination.
           </p>
         </div>
       </div>
@@ -157,12 +184,10 @@
 
   <footer>
     <div class="container footer-content">
-      <p>ES 335 Machine Learning Course Project | IIT Gandhinagar</p>
-      <p>Target Quantitative Risk & Analytics Portfolio (Barclays, J.P. Morgan, Goldman Sachs)</p>
+      <p>ES 335 Machine Learning &bull; IIT Gandhinagar &bull; Macroeconomic Stress Testing on Retail Loan Defaults</p>
     </div>
   </footer>
 
   <script src="script.js"></script>
 </body>
 </html>
-

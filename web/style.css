@@ -267,3 +267,68 @@ footer {
   border-top: 1px solid var(--border-color);
 }
 
+
+/* Architecture Model Cards */
+.model-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.model-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  position: relative;
+}
+
+.model-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  background: rgba(13, 71, 161, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.model-card h4 {
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.model-card p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Econometric Disclaimers */
+.disclaimer-box {
+  margin-top: 2rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+}
+
+.disclaimer-box h4 {
+  color: #92400e;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.disclaimer-box ul {
+  margin-left: 1.25rem;
+}
+
+.disclaimer-box li {
+  font-size: 0.85rem;
+  color: #78350f;
+  margin-bottom: 0.35rem;
+}

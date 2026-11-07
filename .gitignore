@@ -48,6 +48,7 @@ data/processed/*
 !data/processed/.gitkeep
 data/*.ipynb
 *.csv
+!reports/*.csv
 *.parquet
 *.feather
 *.zip
