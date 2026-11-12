@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Default Risk Predictor | ES 335 Credit Risk</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="container header-container">
+      <div>
+        <h1>Loan Default Risk Predictor</h1>
+        <p class="subtitle">ES 335 Machine Learning | IIT Gandhinagar | Quantitative Risk & Analytics</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Interactive Sensitivity & Risk Explorer (Moved to the Top) -->
+    <section class="card interactive-card">
+      <h2>Predictor Model</h2>
+      <p style="margin-bottom: 1.5rem; color: #475569;">
+        Adjust macroeconomic conditions and borrower application details below, then click <strong>Predict Default Risk</strong>:
+      </p>
+
+      <div class="simulator-layout">
+        <!-- Controls -->
+        <div class="controls-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h3 style="margin: 0;">Origination Macroeconomic Levers</h3>
+            <span style="font-size: 0.75rem; color: #64748b;">Extended Stress-Testing Range</span>
+          </div>
+
+          <!-- Quick Stress Scenario Presets -->
+          <div style="margin-bottom: 1.25rem;">
+            <small style="color: #475569; font-weight: 600; display: block; margin-bottom: 0.4rem;">Quick Stress Presets:</small>
+            <div class="preset-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="preset-btn" data-unemp="5.0" data-cpi="2.0" data-chg="0.0">Calm Baseline</button>
+              <button type="button" class="preset-btn" data-unemp="6.8" data-cpi="3.2" data-chg="0.8">Mild Slowdown</button>
+              <button type="button" class="preset-btn" data-unemp="9.8" data-cpi="4.5" data-chg="2.0">Acute 2008 Recession Shock</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="unemployment-slider">National Unemployment Rate (UNRATE):</label>
+              <span id="unemployment-val" class="slider-val">5.0%</span>
+            </div>
+            <input type="range" id="unemployment-slider" min="3.0" max="20.0" step="0.1" value="5.0">
+            <small class="hint">Range: 3.0% to 20.0% (Severe Economic Stress Bound)</small>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="cpi-slider">CPI Year-over-Year Inflation:</label>
+              <span id="cpi-val" class="slider-val">2.0%</span>
+            </div>
+            <input type="range" id="cpi-slider" min="-2.0" max="15.0" step="0.1" value="2.0">
+            <small class="hint">Range: -2.0% to 15.0% (High Inflation Stress Bound)</small>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="unemp-change-slider">6-Month Change in Unemployment (Shock Velocity):</label>
+              <span id="unemp-change-val" class="slider-val">0.0%</span>
+            </div>
+            <input type="range" id="unemp-change-slider" min="-1.5" max="2.5" step="0.1" value="0.0">
+            <small class="hint">Range: -1.5% to +2.5% (Acute Shock)</small>
+          </div>
+
+          <h3 style="margin-top: 1.5rem;">Representative Borrower Application Profile</h3>
+          <div class="borrower-inputs">
+            <div>
+              <label for="fico-input">FICO Score:</label>
+              <input type="number" id="fico-input" value="690" min="660" max="850">
+            </div>
+            <div>
+              <label for="dti-input">DTI (%):</label>
+              <input type="number" id="dti-input" value="18" min="0" max="40">
+            </div>
+            <div>
+              <label for="income-input">Annual Income ($):</label>
+              <input type="number" id="income-input" value="70000" min="20000" max="300000" step="5000">
+            </div>
+          </div>
+
+          <!-- Predict Button -->
+          <button id="predict-btn" class="predict-button" type="button">
+            Predict Default Risk
+          </button>
+        </div>
+
+        <!-- Output Display -->
+        <div class="output-panel">
+          <h3>Model-Based Sensitivity Estimate</h3>
+          
+          <!-- Speedometer Gauge -->
+          <div class="speedometer-container">
+            <svg class="speedometer-svg" viewBox="0 0 240 148">
+              <defs>
+                <filter id="needle-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity="0.35" />
+                </filter>
+              </defs>
+
+              <!-- Colored Arc Zones: Green -> Blue -> Orange -> Red -->
+              <!-- Green Zone: Low Risk (0% to 10% PD) -->
+              <path d="M 35 115 A 85 85 0 0 1 59.9 54.9" fill="none" stroke="#10b981" stroke-width="14" stroke-linecap="round" />
+              <!-- Blue Zone: Moderate Risk (10% to 16% PD) -->
+              <path d="M 59.9 54.9 A 85 85 0 0 1 120 30" fill="none" stroke="#3b82f6" stroke-width="14" />
+              <!-- Orange Zone: Elevated Risk (16% to 22% PD) -->
+              <path d="M 120 30 A 85 85 0 0 1 180.1 54.9" fill="none" stroke="#f59e0b" stroke-width="14" />
+              <!-- Red Zone: Severe Risk (22%+ PD) -->
+              <path d="M 180.1 54.9 A 85 85 0 0 1 205 115" fill="none" stroke="#ef4444" stroke-width="14" stroke-linecap="round" />
+
+              <!-- Speedometer Pointer Needle -->
+              <g id="speedometer-needle" style="transform-origin: 120px 115px; transform: rotate(-15deg); transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                <polygon points="116,115 120,24 124,115" fill="#1e293b" filter="url(#needle-shadow)" />
+                <polygon id="needle-tip" points="118,32 120,24 122,32" fill="#3b82f6" />
+                <circle cx="120" cy="115" r="9" fill="#0f172a" />
+                <circle cx="120" cy="115" r="4" fill="#ffffff" />
+              </g>
+
+              <!-- Zone Acronym Markers -->
+              <text x="32" y="134" font-size="9" fill="#10b981" font-weight="700">LOW</text>
+              <text x="75" y="44" font-size="9" fill="#3b82f6" font-weight="700">MOD</text>
+              <text x="145" y="44" font-size="9" fill="#f59e0b" font-weight="700">ELEV</text>
+              <text x="188" y="134" font-size="9" fill="#ef4444" font-weight="700">SEV</text>
+            </svg>
+
+            <!-- Digital Percentage Readout -->
+            <div class="speedometer-readout">
+              <span id="pd-percentage">14.2%</span>
+              <span class="gauge-label">Probability of Default</span>
+            </div>
+          </div>
+
+          <div class="risk-badge moderate" id="risk-status">Moderate Risk</div>
+
+          <div class="scenario-summary">
+            <h4>Macro Sensitivity Delta</h4>
+            <p id="delta-summary">Default odds changed by <strong>+0.0%</strong> relative to benign baseline.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Model Comparison Architecture & Holdout Benchmark Scorecard -->
+    <section class="card architecture-card">
+      <h2>Experimental Model Architecture</h2>
+      <p>Models are strictly separated to isolate the marginal predictive power of macroeconomic conditions at origination:</p>
+      <div class="model-cards-grid">
+        <div class="model-card">
+          <span class="model-tag">Model A</span>
+          <h4>Historical Baseline</h4>
+          <p>Predicts empirical training base-rate default probability (uninformed baseline).</p>
+        </div>
+        <div class="model-card">
+          <span class="model-tag">Model B</span>
+          <h4>Borrower-Only Logit</h4>
+          <p>Application features at origination. Excludes lender pricing (<code>int_rate</code>, <code>installment</code>, <code>grade</code>).</p>
+        </div>
+        <div class="model-card model-card-chosen" style="background-color: #f0fdf4; border: 2px solid #22c55e; position: relative;">
+          <span style="position: absolute; top: -10px; right: 12px; background: #16a34a; color: #ffffff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em;">Chosen Model</span>
+          <span class="model-tag" style="background-color: #dcfce7; color: #15803d;">Model C</span>
+          <h4 style="color: #14532d;">Borrower + Macro Logit</h4>
+          <p>Borrower attributes plus conservative 2-month lagged stationary macro series (UNRATE, change, CPI). Powers the live interactive predictor above.</p>
+        </div>
+        <div class="model-card">
+          <span class="model-tag">Model D</span>
+          <h4>Borrower + Macro LightGBM</h4>
+          <p>Gradient boosted trees on Model C features to capture potential non-linearities. Evaluated separately in Python.</p>
+        </div>
+      </div>
+
+      <!-- 2015 Holdout Benchmark Scorecard Table -->
+      <div class="benchmark-table-wrapper" style="margin-top: 2rem; overflow-x: auto;">
+        <h3>2015 Holdout Test Scorecard (Untouched Out-of-Time Evaluation)</h3>
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem;">
+          Trained chronologically on 2007–2014 loans; evaluated on 283,026 loans from the 2015 holdout vintage (Empirical Default Rate = 14.89%).
+        </p>
+        <table class="benchmark-table" id="benchmark-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;">
+              <th style="padding: 0.6rem 0.75rem;">Model</th>
+              <th style="padding: 0.6rem 0.75rem;">Weighting</th>
+              <th style="padding: 0.6rem 0.75rem;">PR-AUC</th>
+              <th style="padding: 0.6rem 0.75rem;">ROC-AUC</th>
+              <th style="padding: 0.6rem 0.75rem;">Brier Score</th>
+              <th style="padding: 0.6rem 0.75rem;">Mean Pred PD</th>
+              <th style="padding: 0.6rem 0.75rem;">Actual DR</th>
+            </tr>
+          </thead>
+          <tbody id="benchmark-table-body">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_A</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">baseline</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1489</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.5000</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1270</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.15%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_B</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2224</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6380</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1231</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.86%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0; background-color: #f0fdf4;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 700; color: #15803d;">MODEL_C <span style="font-size: 0.7rem; background: #22c55e; color: #fff; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">CHOSEN</span></td>
+              <td style="padding: 0.5rem 0.75rem; color: #166534; font-weight: 500;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.2218</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.6375</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.1234</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">13.11%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_D_BASE</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2262</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6457</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1227</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.76%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_D</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2240</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6421</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1228</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">15.69%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">LENDER_BENCHMARK</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2663</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6863</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1209</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">12.08%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_C_ABLATION</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2214</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6369</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1233</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.37%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Creator & Contact Details Section -->
+    <section class="card creator-card">
+      <h2>Project Creator & Model Developer</h2>
+      <div class="creator-container">
+        <div class="creator-profile">
+          <div class="creator-avatar">KK</div>
+          <div class="creator-details">
+            <h3 class="creator-name">Kunal Kashyap</h3>
+            <p class="creator-title">Website & Machine Learning Model Creator</p>
+            <p class="creator-institution">ES 335: Machine Learning &bull; Indian Institute of Technology Gandhinagar</p>
+          </div>
+        </div>
+
+        <div class="creator-contact-grid">
+          <div class="contact-item">
+            <span class="contact-label">Name</span>
+            <span class="contact-value">Kunal Kashyap</span>
+          </div>
+
+          <div class="contact-item">
+            <span class="contact-label">Email</span>
+            <a href="mailto:kunalkashyap2603@gmail.com" class="contact-value contact-link">kunalkashyap2603@gmail.com</a>
+          </div>
+
+          <div class="contact-item">
+            <span class="contact-label">Contact Number</span>
+            <a href="tel:+917577815607" class="contact-value contact-link">+91 7577815607</a>
+          </div>
+
+          <div class="contact-item contact-address">
+            <span class="contact-label">Address</span>
+            <span class="contact-value">IIT Gandhinagar, Palaj, Gujarat, PIN 382355</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-content">
+      <p>ES 335 Machine Learning &bull; IIT Gandhinagar &bull; Macroeconomic Stress Testing on Retail Loan Defaults</p>
+      <p style="margin-top: 0.4rem; font-size: 0.82rem; color: #94a3b8;">Created & Developed by Kunal Kashyap &bull; IIT Gandhinagar</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

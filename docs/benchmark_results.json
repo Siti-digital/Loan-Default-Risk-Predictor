@@ -1,0 +1,86 @@
+{
+  "evaluation_cohort": "2015 Matured Holdout Set (283,026 loans)",
+  "empirical_default_rate": 0.14886264866125373,
+  "models": [
+    {
+      "Model": "MODEL_A",
+      "Calibration": "baseline",
+      "PR-AUC": 0.14886264866125373,
+      "ROC-AUC": 0.5,
+      "Brier_Score": 0.12700229472476354,
+      "Mean_Pred_PD": 0.13154981440589164,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": -0.017312834255362092
+    },
+    {
+      "Model": "MODEL_B",
+      "Calibration": "unweighted",
+      "PR-AUC": 0.222429356984934,
+      "ROC-AUC": 0.6380491929130809,
+      "Brier_Score": 0.12311873508941408,
+      "Mean_Pred_PD": 0.1385515111657085,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": -0.010311137495545242
+    },
+    {
+      "Model": "MODEL_C",
+      "Calibration": "unweighted",
+      "PR-AUC": 0.2218300801137464,
+      "ROC-AUC": 0.6374808799404565,
+      "Brier_Score": 0.12338859492256356,
+      "Mean_Pred_PD": 0.13112756385927704,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": -0.01773508480197669
+    },
+    {
+      "Model": "LENDER_BENCHMARK",
+      "Calibration": "unweighted",
+      "PR-AUC": 0.2662690225534091,
+      "ROC-AUC": 0.6862941172278142,
+      "Brier_Score": 0.12089593195808258,
+      "Mean_Pred_PD": 0.12080455799469382,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": -0.028058090666559912
+    },
+    {
+      "Model": "MODEL_C_ABLATION",
+      "Calibration": "unweighted",
+      "PR-AUC": 0.22142103912055386,
+      "ROC-AUC": 0.63694415353506,
+      "Brier_Score": 0.12325284103138624,
+      "Mean_Pred_PD": 0.1336881877184006,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": -0.01517446094285313
+    },
+    {
+      "Model": "MODEL_D_BASE",
+      "Calibration": "unweighted",
+      "PR-AUC": 0.2261970307644681,
+      "ROC-AUC": 0.6457476018488304,
+      "Brier_Score": 0.12269896392215061,
+      "Mean_Pred_PD": 0.13755056734033336,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": -0.011312081320920375
+    },
+    {
+      "Model": "MODEL_D",
+      "Calibration": "unweighted",
+      "PR-AUC": 0.22402276957026213,
+      "ROC-AUC": 0.6420830393271977,
+      "Brier_Score": 0.12277093344404943,
+      "Mean_Pred_PD": 0.156926735038707,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": 0.008064086377453261
+    },
+    {
+      "Model": "MODEL_C_BALANCED_CHECK",
+      "Calibration": "balanced_diagnostic",
+      "PR-AUC": 0.2215974390265269,
+      "ROC-AUC": 0.6375293552806027,
+      "Brier_Score": 0.2360671405142376,
+      "Mean_Pred_PD": 0.47942807680074684,
+      "Actual_DR": 0.14886264866125373,
+      "Calibration_Error": 0.3305654281394931
+    }
+  ]
+}

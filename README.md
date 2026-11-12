@@ -1,8 +1,28 @@
 # Macro-Aware Credit Risk: Does the Local / Systematic Economy at Origination Improve Default Prediction?
 
-**Course Alignment:** ES 335 Machine Learning (IIT Gandhinagar)  
-**Target Domain:** Quantitative Risk & Credit Analytics (Barclays, J.P. Morgan, Goldman Sachs)  
-**Deliverable:** End-to-End Econometric & ML Pipeline & Interactive Static GitHub Pages Application  
+**Course:** ES 335: Machine Learning (Indian Institute of Technology Gandhinagar)  
+**Author / Developer:** Kunal Kashyap  
+**Contact:** kunalkashyap2603@gmail.com | +91 7577815607 | IIT Gandhinagar, Palaj, Gujarat, PIN 382355  
+**Submission Due Date:** November 17, 2026  
+
+---
+
+## 📌 Submission Links & Quick Access
+
+* **🌐 Live Interactive Web Application (GitHub Pages):**  
+  [https://siti-digital.github.io/Loan-Default-Risk-Predictor/](https://siti-digital.github.io/Loan-Default-Risk-Predictor/)
+
+* **💻 GitHub Source Repository:**  
+  [https://github.com/Siti-digital/Loan-Default-Risk-Predictor](https://github.com/Siti-digital/Loan-Default-Risk-Predictor)
+
+* **📓 Primary Research & Modeling Notebook:**  
+  [`macro_stress_testing.ipynb`](macro_stress_testing.ipynb) (7 fully executed econometric & ML phases)
+
+* **🖥️ Interactive Standalone CLI Predictor:**  
+  [`predict.py`](predict.py) (Menu-driven terminal interface with datatype-guided inputs & stress test modes)
+
+* **📦 Pre-Trained Binary Model Artifact:**  
+  [`loan_default_predictor.bin`](loan_default_predictor.bin) (Self-contained joblib serialized model bundle)
 
 ---
 
@@ -189,39 +209,85 @@ flowchart TD
 
 ---
 
-## 5. Local Setup & Execution Guide
+## 5. Setup, Rebuild Steps & Code Location
 
-### 5.1 Virtual Environment Activation & Installation
-Activate the project's local virtual environment:
+### 5.1 Repository Code Location Map
+The project is modularly structured for full auditability and reproducibility:
+
+| File / Directory | Description & Purpose |
+| :--- | :--- |
+| **[`macro_stress_testing.ipynb`](macro_stress_testing.ipynb)** | **Primary Notebook:** Complete end-to-end 7-phase research pipeline, statistical tests, model training, and OOT evaluation. |
+| **[`predict.py`](predict.py)** | **Interactive CLI Application:** Standalone menu-driven terminal tool for real-time default risk prediction and stress-testing. |
+| **[`loan_default_predictor.bin`](loan_default_predictor.bin)** | **Serialized Model Artifact:** Self-contained `joblib` bundle containing Model C weights, scalers, and metadata. |
+| **[`docs/`](docs/) & [`web/`](web/)** | **Static Web Application:** Complete client-side GitHub Pages deliverable (`index.html`, `style.css`, `script.js`). |
+| **[`src/`](src/)** | **Core Modules:** Pure Python implementations of data loaders, stationarity pipelines, feature engineering, and metrics. |
+| **[`config/experiment.yaml`](config/experiment.yaml)** | **Experiment Configuration:** Frozen hyperparameters, temporal splits, seed values, and variable definitions. |
+| **[`reports/`](reports/)** | **Empirical Audits:** Full maturity audit table (`maturity_audit_table.csv`) and generated publication figures. |
+| **[`.github/workflows/`](.github/workflows/)** | **CI/CD Automation:** GitHub Actions workflow for automated deployment to GitHub Pages. |
+
+---
+
+### 5.2 Environment Setup & Installation
+The project runs on **Python 3.12**:
 
 ```powershell
-# In PowerShell:
-.\.venv\Scripts\Activate.ps1
+# 1. Clone repository
+git clone https://github.com/Siti-digital/Loan-Default-Risk-Predictor.git
+cd "Loan-Default-Risk-Predictor"
 
-# Upgrade pip and install all required packages:
+# 2. Activate virtual environment (e.g., ai-env or .venv)
+.\ai-env\Scripts\Activate.ps1
+# Or in standard bash: source .venv/bin/activate
+
+# 3. Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 5.2 API Key Configuration
-Create a `.env` file in the root directory:
-```env
-FRED_API_KEY=your_32_character_fred_api_key
-```
+---
 
-### 5.3 Launching the Pipeline
-Open the main research notebook:
-```bash
-jupyter lab
-# Or open macro_stress_testing.ipynb directly in VS Code
-```
+### 5.3 Data Access & Acquisition Instructions
+1. **LendingClub Loan Micro-Data (2.26 Million Loans):**
+   - **Source:** Kaggle LendingClub Loan Dataset (`accepted_2007_to_2018Q4.csv.gz` or `loan.csv`).
+   - **Kaggle URL:** [https://www.kaggle.com/datasets/wordsforthewise/lending-club](https://www.kaggle.com/datasets/wordsforthewise/lending-club)
+   - **Placement:** Download and place raw CSV in `data/raw/accepted_2007_to_2018Q4.csv.gz` (or `data/raw/loan.csv`).
+   - **Access Notice:** The raw 2.26M loan dataset (~1.6 GB uncompressed) is excluded from version control via `.gitignore`. The full pre-processed analytical tables and serialized parameters are packaged inside the repository.
 
-### 5.4 Running the Web App Locally
-The interactive web application requires no Python backend:
+2. **Macroeconomic Time-Series Data (FRED):**
+   - **Source:** Federal Reserve Bank of St. Louis Economic Data (FRED).
+   - **Series Pulled:**
+     - `UNRATE` (Civilian Unemployment Rate, Monthly, Seasonally Adjusted)
+     - `CPIAUCSL` (Consumer Price Index for All Urban Consumers, Monthly)
+     - `FEDFUNDS` (Federal Funds Effective Rate, Monthly)
+     - `UMCSENT` (University of Michigan Consumer Sentiment, Monthly)
+     - `DGS10` (10-Year Treasury Constant Maturity Rate, Monthly)
+   - **FRED API Key:** Store your key in `.env` as `FRED_API_KEY=your_key`. Automated fallback is built into `src/data_loader.py` using `pandas_datareader` if an API key is not supplied.
+
+---
+
+### 5.4 Rebuilding the Pipeline & Execution Options
+
+#### Option A: Running the Interactive CLI Tool (`predict.py`)
 ```powershell
-# Open web/index.html in any browser:
-Start-Process "web/index.html"
+python predict.py
 ```
+* **Mode 1:** Interactive menu prompting for individual inputs line-by-line (FICO, DTI, Income, UNRATE, CPI, UNRATE Shock) with datatype guidance.
+* **Mode 2:** Instant macroeconomic stress-test simulations (Severe 2008 Recession, Benign Boom, Stagflation).
+* **Mode 3:** Batch evaluation from CSV.
+
+#### Option B: Re-executing the Research Pipeline Notebook
+```powershell
+jupyter lab
+# Open macro_stress_testing.ipynb and select 'Run All Cells'
+```
+* Automatically verifies data maturity, constructs stationary series with 2-month publication lags, fits Models A through D, and exports test scorecards to `reports/` and `web/`.
+
+#### Option C: Running the Web Simulator Locally
+```powershell
+# Double-click docs/index.html or run:
+Start-Process "docs/index.html"
+```
+* The web app is 100% static client-side JavaScript and runs immediately in any web browser without requiring a local web server or backend runtime.
 
 ---
 
@@ -229,22 +295,46 @@ Start-Process "web/index.html"
 
 | Rubric Dimension | Weight | Project Implementation & Evidence |
 | :--- | :---: | :--- |
-| **Problem Formulation & Scope** | 10 pts | Clear quantitative research question; target binary default defined; prediction horizon fixed at origination time. |
+| **Problem Formulation & Scope** | 10 pts | Clear quantitative research question; target binary default defined; prediction horizon fixed strictly at origination time. |
 | **Data Understanding** | 10 pts | Full empirical maturity audit of 2.26M LendingClub loans; FRED official economic series; identification and exclusion of right-censoring in 2016–2018 cohorts. |
 | **Preprocessing & Statistical Reasoning** | 10 pts | Elimination of target-leakage columns; stationary transform (`CPI_YoY_Inflation`, `UNRATE_change_6m`); 2-month publication lag shift; transformations fit strictly on training set. |
 | **Baseline & Method Selection** | 15 pts | Rigorous progression: Historical baseline (Model A), Borrower-only baseline (Model B), Macro-augmented logit (Model C), and Macro-augmented LightGBM (Model D), plus isolated Lender Benchmark. |
 | **Evaluation Design & Metrics** | 20 pts | Strict chronological Out-of-Time (OOT) validation (2007–2014 Train vs 2015 Test); evaluation via PR-AUC, ROC-AUC, Brier score, reliability diagrams, and time-block bootstrap CIs. |
 | **Results, Errors & Limitations** | 10 pts | Odds ratio interpretation ($e^\beta$) with month-clustered standard errors; origination sensitivity exploration; candid discussion of observational credit data limitations and lender pricing endogeneity. |
 | **Reproducibility & Technical Integrity** | 5 pts | Modular code structure, automated pre-flight integrity verification suite (`src/validation_checks.py`), frozen configuration (`config/experiment.yaml`), secure `.env` credential management. |
-| **Interactive Website (GitHub Pages)** | 10 pts | Static web application hosted on GitHub Pages displaying problem overview, results, and methodology. |
-| **Useful Interaction** | 5 pts | Real-time interactive origination sensitivity sliders clamped to empirical 2007–2014 training bounds, evaluating dynamic default probability via client-side sigmoid formula. |
+| **Interactive Website (GitHub Pages)** | 10 pts | Static web application hosted live on GitHub Pages displaying problem overview, results, and methodology. |
+| **Useful Interaction** | 5 pts | Real-time interactive origination sensitivity sliders clamped to empirical 2007–2014 training bounds, evaluating dynamic default probability via client-side sigmoid formula and animated speedometer. |
 | **Individual Defense** | 5 pts | Rigorous preparation for defending econometric choices, maturity-based censoring elimination, publication lags, and probability calibration. |
 | **Total** | **100 pts** | **100% Rubric Coverage** |
 
 ---
 
-## 7. Citations & Academic Integrity Disclosure
-* **Data Sources:** 
-  * LendingClub Retail Loan Data (Kaggle).
-  * Federal Reserve Bank of St. Louis (FRED): Unemployment Rate (`UNRATE`), Consumer Price Index (`CPIAUCSL`), Federal Funds Rate (`FEDFUNDS`), Consumer Sentiment (`UMCSENT`), 10-Year Treasury Constant Maturity (`DGS10`).
-* **Academic Guidelines:** Prepared strictly adhering to ES 335 Academic Honor Code. All external code and reference material are explicitly documented.
+## 7. AI-Use Disclosure & External Citations
+
+### 7.1 AI-Use Disclosure
+In compliance with the **ES 335 Academic Honor Code** and AI-use transparency guidelines:
+* **Tool Utilized:** Generative AI assistant (Google Antigravity / Gemini-based coding agent).
+* **Scope of Assistance:**
+  1. Automated boilerplate scaffolding for modular Python modules (`src/`) and testing utilities.
+  2. Frontend user interface structuring (HTML5 semantic markup, CSS responsive styling, SVG speedometer geometry, and client-side JavaScript event listeners).
+  3. Documentation formatting, markdown tables, and Mermaid flow diagrams.
+* **Independent Author Contributions:**
+  1. The underlying mathematical and econometric problem formulation (predictive comparison vs. causal estimation, unweighted logit calibration preservation).
+  2. The empirical 2.26M loan maturity audit and the discovery of severe right-censoring in the 2016–2018 cohorts.
+  3. The rigorous 2-month publication lag policy eliminating Point-in-Time look-ahead bias.
+  4. The econometric interpretation of unemployment velocity ($\Delta U$) vs. static level effects, month-clustered standard errors, and time-block bootstrap inferences.
+  5. All final modeling decisions, code verification, error analysis, and defense readiness.
+
+---
+
+### 7.2 Citations & External References
+* **Data Providers:**
+  * **LendingClub Corporation:** Historical retail loan micro-data (2007–2018Q4), accessed via Kaggle.
+  * **Federal Reserve Bank of St. Louis (FRED):** Macroeconomic series `UNRATE`, `CPIAUCSL`, `FEDFUNDS`, `UMCSENT`, `DGS10`.
+* **Regulatory & Academic Literature:**
+  * **Basel Committee on Banking Supervision (BCBS):** *International Convergence of Capital Measurement and Capital Standards* (Basel II/III Internal Ratings-Based framework for Probability of Default).
+  * **Board of Governors of the Federal Reserve System:** *Comprehensive Capital Analysis and Review (CCAR) and Dodd-Frank Act Stress Testing (DFAST)* methodologies for supervisory macroeconomic stress testing.
+  * **Merton, R. C. (1974):** *On the Pricing of Corporate Debt: The Risk Structure of Interest Rates*, Journal of Finance, 29(2), 449–470.
+  * **Brier, G. W. (1950):** *Verification of Forecasts Expressed in Terms of Probability*, Monthly Weather Review, 78(1), 1–3.
+* **Software & Open-Source Libraries:**
+  * Scikit-Learn (`sklearn`), Statsmodels (`statsmodels.discrete.discrete_model.Logit`), LightGBM (`lightgbm`), Pandas, NumPy, Matplotlib, Seaborn, Joblib.
