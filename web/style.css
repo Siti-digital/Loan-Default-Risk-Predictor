@@ -205,32 +205,50 @@ input[type="range"] {
   justify-content: center;
 }
 
-.gauge-container {
-  margin: 1.5rem 0;
-}
-
-.gauge-circle {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  border: 8px solid var(--risk-low);
+/* Speedometer Gauge Styles */
+.speedometer-container {
+  width: 100%;
+  max-width: 260px;
+  margin: 0.5rem auto 0.75rem auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  background: #ffffff;
+  position: relative;
+}
+
+.speedometer-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+#speedometer-needle {
+  transform-origin: 120px 115px;
+  transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.speedometer-readout {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 #pd-percentage {
-  font-size: 1.9rem;
+  font-size: 2.1rem;
   font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .gauge-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.2rem;
+  font-weight: 600;
 }
 
 .risk-badge {

@@ -1,5 +1,5 @@
-// Client-side Logistic Sigmoid Inference Engine for Loan Default Risk Predictor
-// Strictly evaluates Model C (Borrower + Macro Logistic Regression)
+// Client-side Logistic Sigmoid Inference Engine with Speedometer Gauge
+// Evaluates Model C (Borrower + Macro Logistic Regression)
 // Formula: P(Default) = 1 / (1 + exp(-(effective_intercept + sum(beta_i * (X_i - mu_i) / sigma_i))))
 
 // Default fallback parameters (derived from 2007-2014 training window)
@@ -56,13 +56,14 @@ const dtiInput = document.getElementById("dti-input");
 const incomeInput = document.getElementById("income-input");
 const predictBtn = document.getElementById("predict-btn");
 
+const needle = document.getElementById("speedometer-needle");
+const needleTip = document.getElementById("needle-tip");
 const pdPercentage = document.getElementById("pd-percentage");
-const riskGauge = document.getElementById("risk-gauge");
 const riskStatus = document.getElementById("risk-status");
 const deltaSummary = document.getElementById("delta-summary");
 
 function sigmoid(z) {
-  return 1 / (1 + Math.exp(-z));
+  return 1.0 / (1.0 + Math.exp(-z));
 }
 
 function computePD(unemp, cpi, unempChange, fico, dti, income) {
@@ -106,13 +107,13 @@ function computePD(unemp, cpi, unempChange, fico, dti, income) {
 }
 
 function calculateRisk() {
-  const unemp = parseFloat(unemploymentSlider.value);
-  const cpi = parseFloat(cpiSlider.value);
-  const unempChange = parseFloat(unempChangeSlider.value);
+  const unemp = parseFloat(unemploymentSlider ? unemploymentSlider.value : 5.0);
+  const cpi = parseFloat(cpiSlider ? cpiSlider.value : 2.0);
+  const unempChange = parseFloat(unempChangeSlider ? unempChangeSlider.value : 0.0);
 
-  const fico = parseFloat(ficoInput.value) || 690;
-  const dti = parseFloat(dtiInput.value) || 18;
-  const income = parseFloat(incomeInput.value) || 70000;
+  const fico = parseFloat(ficoInput ? ficoInput.value : 690) || 690;
+  const dti = parseFloat(dtiInput ? dtiInput.value : 18) || 18;
+  const income = parseFloat(incomeInput ? incomeInput.value : 70000) || 70000;
 
   // Update slider label texts
   updateSliderLabels();
@@ -134,37 +135,60 @@ function calculateRisk() {
     income
   );
 
-  // Update Risk Status Badge and Gauge Appearance
+  // Speedometer Needle Angle Calculation:
+  // Green Zone:   0.0% to 10.0% PD -> -90 deg to -45 deg
+  // Blue Zone:   10.0% to 16.0% PD -> -45 deg to   0 deg
+  // Orange Zone: 16.0% to 22.0% PD ->   0 deg to +45 deg
+  // Red Zone:    22.0%+ PD         -> +45 deg to +90 deg
+  let needleAngle = -90;
   let statusText = "Low Risk";
   let statusClass = "low";
   let gaugeColor = "#10b981"; // green
 
-  if (currentPD >= 0.22) {
-    statusText = "Severe Default Risk";
-    statusClass = "severe";
-    gaugeColor = "#ef4444"; // red
-  } else if (currentPD >= 0.16) {
+  if (currentPD <= 0.10) {
+    needleAngle = -90 + (currentPD / 0.10) * 45;
+    statusText = "Low Risk";
+    statusClass = "low";
+    gaugeColor = "#10b981"; // green
+  } else if (currentPD <= 0.16) {
+    needleAngle = -45 + ((currentPD - 0.10) / 0.06) * 45;
+    statusText = "Moderate Risk";
+    statusClass = "moderate";
+    gaugeColor = "#3b82f6"; // blue
+  } else if (currentPD <= 0.22) {
+    needleAngle = 0 + ((currentPD - 0.16) / 0.06) * 45;
     statusText = "Elevated Default Risk";
     statusClass = "high";
     gaugeColor = "#f59e0b"; // amber
-  } else if (currentPD >= 0.11) {
-    statusText = "Moderate Default Risk";
-    statusClass = "moderate";
-    gaugeColor = "#3b82f6"; // blue
+  } else {
+    const extra = Math.min((currentPD - 0.22) / 0.18, 1.0);
+    needleAngle = 45 + extra * 45;
+    statusText = "Severe Default Risk";
+    statusClass = "severe";
+    gaugeColor = "#ef4444"; // red
   }
 
+  // Clamp needle angle to [-90, +90]
+  needleAngle = Math.max(-90, Math.min(90, needleAngle));
+
+  // Rotate speedometer needle
+  if (needle) {
+    needle.style.transform = `rotate(${needleAngle.toFixed(1)}deg)`;
+  }
+  if (needleTip) {
+    needleTip.setAttribute("fill", gaugeColor);
+  }
+
+  // Update Status Badge
   if (riskStatus) {
     riskStatus.textContent = statusText;
     riskStatus.className = `risk-badge ${statusClass}`;
   }
-  if (riskGauge) {
-    riskGauge.style.borderColor = gaugeColor;
-  }
 
-  // Scenario Delta Summary
-  const oddsCurrent = currentPD / (1 - currentPD);
-  const oddsBaseline = baselinePD / (1 - baselinePD);
-  const oddsDeltaPct = ((oddsCurrent / oddsBaseline - 1) * 100).toFixed(1);
+  // Update Scenario Delta Summary
+  const oddsCurrent = currentPD / (1.0 - currentPD);
+  const oddsBaseline = baselinePD / (1.0 - baselinePD);
+  const oddsDeltaPct = ((oddsCurrent / oddsBaseline - 1.0) * 100.0).toFixed(1);
   const sign = oddsDeltaPct >= 0 ? "+" : "";
 
   if (deltaSummary) {
@@ -241,7 +265,7 @@ fetch("model_coefficients.json")
     console.log("Using built-in model parameters:", err.message);
   });
 
-// Fetch holdout benchmark results to populate the model comparison table
+// Fetch holdout benchmark results to populate/refresh the model comparison table if served via HTTP/S
 fetch("benchmark_results.json")
   .then((res) => {
     if (res.ok) return res.json();
@@ -271,9 +295,10 @@ fetch("benchmark_results.json")
     });
   })
   .catch((err) => {
-    console.log("Benchmark table loader:", err.message);
+    // Falls back seamlessly to the statically embedded rows in index.html
+    console.log("Using static benchmark table rows:", err.message);
   });
 
-// Initial update on page load
+// Initial calculation on page load
 updateSliderLabels();
 calculateRisk();
