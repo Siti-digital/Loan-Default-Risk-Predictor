@@ -252,16 +252,20 @@ fetch("benchmark_results.json")
     if (!tbody || !data.models) return;
     tbody.innerHTML = "";
     data.models.forEach((m) => {
+      const isModelC = m.Model === "MODEL_C";
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid #e2e8f0";
+      if (isModelC) {
+        tr.style.backgroundColor = "#f0fdf4";
+      }
       tr.innerHTML = `
-        <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${m.Model}</td>
-        <td style="padding: 0.5rem 0.75rem; color: #64748b;">${m.Calibration || "unweighted"}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["PR-AUC"].toFixed(4)}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["ROC-AUC"].toFixed(4)}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["Brier_Score"].toFixed(4)}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Mean_Pred_PD"] * 100).toFixed(2)}%</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Actual_DR"] * 100).toFixed(2)}%</td>
+        <td style="padding: 0.5rem 0.75rem; font-weight: ${isModelC ? "700" : "600"}; ${isModelC ? "color: #15803d;" : ""}">${m.Model}${isModelC ? ' <span style="font-size: 0.7rem; background: #22c55e; color: #fff; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">CHOSEN</span>' : ''}</td>
+        <td style="padding: 0.5rem 0.75rem; color: ${isModelC ? "#166534" : "#64748b"}; font-weight: ${isModelC ? "500" : "normal"};">${m.Calibration || "unweighted"}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: ${isModelC ? "600" : "normal"};">${m["PR-AUC"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: ${isModelC ? "600" : "normal"};">${m["ROC-AUC"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: ${isModelC ? "600" : "normal"};">${m["Brier_Score"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: ${isModelC ? "600" : "normal"};">${(m["Mean_Pred_PD"] * 100).toFixed(2)}%</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: ${isModelC ? "600" : "normal"};">${(m["Actual_DR"] * 100).toFixed(2)}%</td>
       `;
       tbody.appendChild(tr);
     });

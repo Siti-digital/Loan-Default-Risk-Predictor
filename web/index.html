@@ -126,10 +126,11 @@
           <h4>Borrower-Only Logit</h4>
           <p>Application features at origination. Excludes lender pricing (<code>int_rate</code>, <code>installment</code>, <code>grade</code>).</p>
         </div>
-        <div class="model-card">
-          <span class="model-tag">Model C</span>
-          <h4>Borrower + Macro Logit</h4>
-          <p>Borrower attributes plus conservative 2-month lagged stationary macro series (UNRATE, change, CPI).</p>
+        <div class="model-card model-card-chosen" style="background-color: #f0fdf4; border: 2px solid #22c55e; position: relative;">
+          <span style="position: absolute; top: -10px; right: 12px; background: #16a34a; color: #ffffff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em;">Chosen Model</span>
+          <span class="model-tag" style="background-color: #dcfce7; color: #15803d;">Model C</span>
+          <h4 style="color: #14532d;">Borrower + Macro Logit</h4>
+          <p>Borrower attributes plus conservative 2-month lagged stationary macro series (UNRATE, change, CPI). Powers the live interactive predictor above.</p>
         </div>
         <div class="model-card">
           <span class="model-tag">Model D</span>
@@ -157,11 +158,70 @@
             </tr>
           </thead>
           <tbody id="benchmark-table-body">
-            <!-- Populated dynamically via script.js from benchmark_results.json -->
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_A</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">baseline</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1489</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.5000</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1270</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.15%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_B</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2224</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6380</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1231</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.86%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0; background-color: #f0fdf4;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 700; color: #15803d;">MODEL_C <span style="font-size: 0.7rem; background: #22c55e; color: #fff; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">CHOSEN</span></td>
+              <td style="padding: 0.5rem 0.75rem; color: #166534; font-weight: 500;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.2218</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.6375</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.1234</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">13.11%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_D_BASE</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2262</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6457</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1227</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.76%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_D</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2240</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6421</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1228</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">15.69%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">LENDER_BENCHMARK</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2663</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6863</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1209</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">12.08%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_C_ABLATION</td>
+              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2214</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6369</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1233</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.37%</td>
+              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
+            </tr>
           </tbody>
-        </table>
-      </div>
-    </section>
   </main>
 
   <footer>
