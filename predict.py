@@ -167,13 +167,13 @@ def run_interactive_prediction(pkg):
         home = "RENT"
 
     print("\n[SECTION 2: Macroeconomic Environment at Origination]")
-    print("  Note: Sliders are clamped to observed 2007-2014 training distribution to prevent extrapolation.")
-    unemp = prompt_input("National Unemployment Rate (UNRATE)", "e.g. 5.2 or 9.5 (Float % 4.0-10.0)", 5.0, float, 4.0, 10.0)
+    print("  Note: Sliders are calibrated for standard to extreme economic stress testing.")
+    unemp = prompt_input("National Unemployment Rate (UNRATE)", "e.g. 5.2 or 15.0 (Float % 3.0-20.0)", 5.0, float, 3.0, 20.0)
     if unemp == -1:
         print("\n[Assessment Cancelled] Returning to main menu...")
         return
 
-    cpi = prompt_input("CPI Inflation Rate (YoY)", "e.g. 2.1 or -1.5 (Float % -2.0 to 5.5)", 2.0, float, -2.0, 5.5)
+    cpi = prompt_input("CPI Inflation Rate (YoY)", "e.g. 2.1 or 8.5 (Float % -2.0 to 15.0)", 2.0, float, -2.0, 15.0)
     if cpi == -1:
         print("\n[Assessment Cancelled] Returning to main menu...")
         return
