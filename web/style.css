@@ -253,13 +253,36 @@ input[type="range"] {
 
 .risk-badge {
   display: inline-block;
-  padding: 0.35rem 1rem;
+  padding: 0.45rem 1.35rem;
   border-radius: 9999px;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #ffffff;
-  background-color: var(--risk-low);
-  transition: background-color 0.3s ease;
+  background-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+  margin-top: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.risk-badge.low {
+  background-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.risk-badge.moderate {
+  background-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.risk-badge.high {
+  background-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.risk-badge.severe {
+  background-color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
 .scenario-summary {
@@ -387,17 +410,30 @@ footer {
   background-color: #f1f5f9;
   border: 1px solid #cbd5e1;
   color: #334155;
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.85rem;
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .preset-btn:hover {
   background-color: #e2e8f0;
   color: #0f172a;
   border-color: #94a3b8;
+}
+
+.preset-btn.active {
+  background-color: #dcfce7 !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35) !important;
+}
+
+.preset-btn.active:hover {
+  background-color: #bbf7d0 !important;
+  border-color: #16a34a !important;
 }
 

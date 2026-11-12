@@ -179,10 +179,11 @@ function calculateRisk() {
     needleTip.setAttribute("fill", gaugeColor);
   }
 
-  // Update Status Badge
+  // Update Status Badge - matching the exact color the pointer is pointing to
   if (riskStatus) {
     riskStatus.textContent = statusText;
     riskStatus.className = `risk-badge ${statusClass}`;
+    riskStatus.style.backgroundColor = gaugeColor;
   }
 
   // Update Scenario Delta Summary
@@ -238,15 +239,42 @@ if (predictBtn) {
   });
 }
 
+// Clear highlight from all preset buttons
+function clearPresetHighlights() {
+  document.querySelectorAll(".preset-btn").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+}
+
 // Quick Stress Scenario Presets Listener
 document.querySelectorAll(".preset-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
+    clearPresetHighlights();
+    btn.classList.add("active");
+
     if (unemploymentSlider) unemploymentSlider.value = btn.dataset.unemp;
     if (cpiSlider) cpiSlider.value = btn.dataset.cpi;
     if (unempChangeSlider) unempChangeSlider.value = btn.dataset.chg;
     updateSliderLabels();
     calculateRisk();
   });
+});
+
+// Remove preset highlight if the user adjusts ANY individual parameter
+const parameterInputs = [
+  unemploymentSlider,
+  cpiSlider,
+  unempChangeSlider,
+  ficoInput,
+  dtiInput,
+  incomeInput
+];
+
+parameterInputs.forEach((input) => {
+  if (input) {
+    input.addEventListener("input", clearPresetHighlights);
+    input.addEventListener("change", clearPresetHighlights);
+  }
 });
 
 // Fetch dynamically exported coefficients from model_coefficients.json
