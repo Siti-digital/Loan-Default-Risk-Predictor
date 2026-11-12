@@ -1,9 +1,8 @@
-// Client-side Logistic Sigmoid Inference Engine for Macroeconomic Sensitivity Explorer
+// Client-side Logistic Sigmoid Inference Engine for Loan Default Risk Predictor
 // Strictly evaluates Model C (Borrower + Macro Logistic Regression)
 // Formula: P(Default) = 1 / (1 + exp(-(effective_intercept + sum(beta_i * (X_i - mu_i) / sigma_i))))
-// Note: Model D (LightGBM) is evaluated offline in Python; tree ensembles are NOT approximated by this sigmoid formula.
 
-// Default fallback parameters (populated dynamically from model_coefficients.json once exported)
+// Default fallback parameters (derived from 2007-2014 training window)
 let modelParams = {
   model_id: "Model_C_Logit",
   description: "Fitted Model C (Borrower + Macro) Logistic Regression Parameters (Trained on 2007-2014)",
@@ -44,51 +43,6 @@ const BENIGN_BASELINE = {
   income: 70000
 };
 
-// Fetch dynamically exported coefficients from model_coefficients.json
-fetch("model_coefficients.json")
-  .then((res) => {
-    if (res.ok) return res.json();
-    throw new Error("Local JSON fetch skipped (using embedded fallback)");
-  })
-  .then((data) => {
-    if (data.weights) {
-      modelParams = data;
-      calculateRisk();
-    }
-  })
-  .catch((err) => {
-    console.log("Using built-in model parameters:", err.message);
-  });
-
-// Fetch holdout benchmark results to populate the model comparison table
-fetch("benchmark_results.json")
-  .then((res) => {
-    if (res.ok) return res.json();
-    throw new Error("Local benchmark JSON not found");
-  })
-  .then((data) => {
-    const tbody = document.getElementById("benchmark-table-body");
-    if (!tbody || !data.models) return;
-    tbody.innerHTML = "";
-    data.models.forEach((m) => {
-      const tr = document.createElement("tr");
-      tr.style.borderBottom = "1px solid #e2e8f0";
-      tr.innerHTML = `
-        <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${m.Model}</td>
-        <td style="padding: 0.5rem 0.75rem; color: #64748b;">${m.Calibration || "unweighted"}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["PR-AUC"].toFixed(4)}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["ROC-AUC"].toFixed(4)}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["Brier_Score"].toFixed(4)}</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Mean_Pred_PD"] * 100).toFixed(2)}%</td>
-        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Actual_DR"] * 100).toFixed(2)}%</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  })
-  .catch((err) => {
-    console.log("Benchmark table loader:", err.message);
-  });
-
 // DOM Elements
 const unemploymentSlider = document.getElementById("unemployment-slider");
 const unemploymentVal = document.getElementById("unemployment-val");
@@ -100,6 +54,7 @@ const unempChangeVal = document.getElementById("unemp-change-val");
 const ficoInput = document.getElementById("fico-input");
 const dtiInput = document.getElementById("dti-input");
 const incomeInput = document.getElementById("income-input");
+const predictBtn = document.getElementById("predict-btn");
 
 const pdPercentage = document.getElementById("pd-percentage");
 const riskGauge = document.getElementById("risk-gauge");
@@ -159,15 +114,15 @@ function calculateRisk() {
   const dti = parseFloat(dtiInput.value) || 18;
   const income = parseFloat(incomeInput.value) || 70000;
 
-  // Update slider text displays
-  unemploymentVal.textContent = `${unemp.toFixed(1)}%`;
-  cpiVal.textContent = `${cpi.toFixed(1)}%`;
-  unempChangeVal.textContent = `${unempChange >= 0 ? "+" : ""}${unempChange.toFixed(1)}%`;
+  // Update slider label texts
+  updateSliderLabels();
 
   // Compute current PD
   const currentPD = computePD(unemp, cpi, unempChange, fico, dti, income);
   const pdFormatted = (currentPD * 100).toFixed(1);
-  pdPercentage.textContent = `${pdFormatted}%`;
+  if (pdPercentage) {
+    pdPercentage.textContent = `${pdFormatted}%`;
+  }
 
   // Compute baseline PD under benign economic conditions
   const baselinePD = computePD(
@@ -198,9 +153,13 @@ function calculateRisk() {
     gaugeColor = "#3b82f6"; // blue
   }
 
-  riskStatus.textContent = statusText;
-  riskStatus.className = `risk-badge ${statusClass}`;
-  riskGauge.style.borderColor = gaugeColor;
+  if (riskStatus) {
+    riskStatus.textContent = statusText;
+    riskStatus.className = `risk-badge ${statusClass}`;
+  }
+  if (riskGauge) {
+    riskGauge.style.borderColor = gaugeColor;
+  }
 
   // Scenario Delta Summary
   const oddsCurrent = currentPD / (1 - currentPD);
@@ -208,42 +167,46 @@ function calculateRisk() {
   const oddsDeltaPct = ((oddsCurrent / oddsBaseline - 1) * 100).toFixed(1);
   const sign = oddsDeltaPct >= 0 ? "+" : "";
 
-  deltaSummary.innerHTML = `Under these macroeconomic origination conditions, estimated default odds change by <strong>${sign}${oddsDeltaPct}%</strong> relative to a benign baseline.`;
+  if (deltaSummary) {
+    deltaSummary.innerHTML = `Under these macroeconomic origination conditions, estimated default odds change by <strong>${sign}${oddsDeltaPct}%</strong> relative to a benign baseline.`;
+  }
 }
-
-// DOM Elements
-const unemploymentSlider = document.getElementById("unemployment-slider");
-const unemploymentVal = document.getElementById("unemployment-val");
-const cpiSlider = document.getElementById("cpi-slider");
-const cpiVal = document.getElementById("cpi-val");
-const unempChangeSlider = document.getElementById("unemp-change-slider");
-const unempChangeVal = document.getElementById("unemp-change-val");
-
-const ficoInput = document.getElementById("fico-input");
-const dtiInput = document.getElementById("dti-input");
-const incomeInput = document.getElementById("income-input");
-const predictBtn = document.getElementById("predict-btn");
 
 function updateSliderLabels() {
-  const unemp = parseFloat(unemploymentSlider.value);
-  const cpi = parseFloat(cpiSlider.value);
-  const unempChange = parseFloat(unempChangeSlider.value);
-
-  unemploymentVal.textContent = `${unemp.toFixed(1)}%`;
-  cpiVal.textContent = `${cpi.toFixed(1)}%`;
-  unempChangeVal.textContent = `${unempChange >= 0 ? "+" : ""}${unempChange.toFixed(1)}%`;
+  if (unemploymentSlider && unemploymentVal) {
+    const unemp = parseFloat(unemploymentSlider.value);
+    unemploymentVal.textContent = `${unemp.toFixed(1)}%`;
+  }
+  if (cpiSlider && cpiVal) {
+    const cpi = parseFloat(cpiSlider.value);
+    cpiVal.textContent = `${cpi.toFixed(1)}%`;
+  }
+  if (unempChangeSlider && unempChangeVal) {
+    const chg = parseFloat(unempChangeSlider.value);
+    unempChangeVal.textContent = `${chg >= 0 ? "+" : ""}${chg.toFixed(1)}%`;
+  }
 }
 
-// Live update slider labels during drag without recomputing whole model until Predict clicked
-unemploymentSlider.addEventListener("input", updateSliderLabels);
-cpiSlider.addEventListener("input", updateSliderLabels);
-unempChangeSlider.addEventListener("input", updateSliderLabels);
+// Live update labels on drag for all sliders
+if (unemploymentSlider) {
+  unemploymentSlider.addEventListener("input", updateSliderLabels);
+  unemploymentSlider.addEventListener("change", updateSliderLabels);
+}
 
-// Predict button listener
+if (cpiSlider) {
+  cpiSlider.addEventListener("input", updateSliderLabels);
+  cpiSlider.addEventListener("change", updateSliderLabels);
+}
+
+if (unempChangeSlider) {
+  unempChangeSlider.addEventListener("input", updateSliderLabels);
+  unempChangeSlider.addEventListener("change", updateSliderLabels);
+}
+
+// Predict button click listener
 if (predictBtn) {
   predictBtn.addEventListener("click", () => {
-    // Add brief click animation feedback
-    predictBtn.style.transform = "scale(0.98)";
+    predictBtn.style.transform = "scale(0.97)";
     setTimeout(() => {
       predictBtn.style.transform = "";
     }, 120);
@@ -254,14 +217,59 @@ if (predictBtn) {
 // Quick Stress Scenario Presets Listener
 document.querySelectorAll(".preset-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
-    unemploymentSlider.value = btn.dataset.unemp;
-    cpiSlider.value = btn.dataset.cpi;
-    unempChangeSlider.value = btn.dataset.chg;
+    if (unemploymentSlider) unemploymentSlider.value = btn.dataset.unemp;
+    if (cpiSlider) cpiSlider.value = btn.dataset.cpi;
+    if (unempChangeSlider) unempChangeSlider.value = btn.dataset.chg;
     updateSliderLabels();
     calculateRisk();
   });
 });
 
-// Initial calculation on page load
-calculateRisk();
+// Fetch dynamically exported coefficients from model_coefficients.json
+fetch("model_coefficients.json")
+  .then((res) => {
+    if (res.ok) return res.json();
+    throw new Error("Local JSON fetch skipped (using embedded fallback)");
+  })
+  .then((data) => {
+    if (data.weights) {
+      modelParams = data;
+      calculateRisk();
+    }
+  })
+  .catch((err) => {
+    console.log("Using built-in model parameters:", err.message);
+  });
 
+// Fetch holdout benchmark results to populate the model comparison table
+fetch("benchmark_results.json")
+  .then((res) => {
+    if (res.ok) return res.json();
+    throw new Error("Local benchmark JSON not found");
+  })
+  .then((data) => {
+    const tbody = document.getElementById("benchmark-table-body");
+    if (!tbody || !data.models) return;
+    tbody.innerHTML = "";
+    data.models.forEach((m) => {
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid #e2e8f0";
+      tr.innerHTML = `
+        <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${m.Model}</td>
+        <td style="padding: 0.5rem 0.75rem; color: #64748b;">${m.Calibration || "unweighted"}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["PR-AUC"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["ROC-AUC"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["Brier_Score"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Mean_Pred_PD"] * 100).toFixed(2)}%</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Actual_DR"] * 100).toFixed(2)}%</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })
+  .catch((err) => {
+    console.log("Benchmark table loader:", err.message);
+  });
+
+// Initial update on page load
+updateSliderLabels();
+calculateRisk();
