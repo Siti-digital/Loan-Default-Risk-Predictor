@@ -112,7 +112,20 @@
       <div class="simulator-layout">
         <!-- Controls -->
         <div class="controls-panel">
-          <h3>Origination Macroeconomic Levers (Clamped to Observed Training Ranges)</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h3 style="margin: 0;">Origination Macroeconomic Levers</h3>
+            <span style="font-size: 0.75rem; color: #64748b;">Clamped to 2007–2014 Range</span>
+          </div>
+
+          <!-- Quick Stress Scenario Presets -->
+          <div style="margin-bottom: 1.25rem;">
+            <small style="color: #475569; font-weight: 600; display: block; margin-bottom: 0.4rem;">Quick Stress Presets:</small>
+            <div class="preset-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="preset-btn" data-unemp="5.0" data-cpi="2.0" data-chg="0.0">Calm Baseline</button>
+              <button type="button" class="preset-btn" data-unemp="6.8" data-cpi="3.2" data-chg="0.8">Mild Slowdown</button>
+              <button type="button" class="preset-btn" data-unemp="9.8" data-cpi="4.5" data-chg="2.0">Acute 2008 Recession Shock</button>
+            </div>
+          </div>
 
           <div class="control-group">
             <div class="control-header">
@@ -134,12 +147,16 @@
 
           <div class="control-group">
             <div class="control-header">
-              <label for="unemp-change-slider">6-Month Change in Unemployment:</label>
+              <label for="unemp-change-slider">6-Month Change in Unemployment (Shock Velocity):</label>
               <span id="unemp-change-val" class="slider-val">0.0%</span>
             </div>
             <input type="range" id="unemp-change-slider" min="-1.5" max="2.5" step="0.1" value="0.0">
             <small class="hint">Observed Training Range: -1.2% (Rapid Recovery) to +2.3% (Acute Shock)</small>
           </div>
+
+          <small class="macro-dynamics-note" style="display: block; font-size: 0.78rem; color: #64748b; background: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #3b82f6; margin-top: 0.5rem;">
+            <strong>Econometric Dynamics:</strong> Loan defaults are primarily triggered by <em>rapid unemployment shocks</em> (positive 6-month change) rather than static high levels where lenders tighten underwriting standards. To simulate a true recession shock, increase both UNRATE and the 6-Month Change.
+          </small>
 
           <h3 style="margin-top: 1.5rem;">Representative Borrower Application Profile</h3>
           <div class="borrower-inputs">
@@ -156,6 +173,11 @@
               <input type="number" id="income-input" value="70000" min="20000" max="300000" step="5000">
             </div>
           </div>
+
+          <!-- Predict Button -->
+          <button id="predict-btn" class="predict-button" type="button">
+            Predict Default Risk
+          </button>
         </div>
 
         <!-- Output Display -->

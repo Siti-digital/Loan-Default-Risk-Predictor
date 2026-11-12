@@ -211,14 +211,57 @@ function calculateRisk() {
   deltaSummary.innerHTML = `Under these macroeconomic origination conditions, estimated default odds change by <strong>${sign}${oddsDeltaPct}%</strong> relative to a benign baseline.`;
 }
 
-// Attach Event Listeners
-[unemploymentSlider, cpiSlider, unempChangeSlider].forEach((slider) => {
-  slider.addEventListener("input", calculateRisk);
-});
+// DOM Elements
+const unemploymentSlider = document.getElementById("unemployment-slider");
+const unemploymentVal = document.getElementById("unemployment-val");
+const cpiSlider = document.getElementById("cpi-slider");
+const cpiVal = document.getElementById("cpi-val");
+const unempChangeSlider = document.getElementById("unemp-change-slider");
+const unempChangeVal = document.getElementById("unemp-change-val");
 
-[ficoInput, dtiInput, incomeInput].forEach((input) => {
-  input.addEventListener("input", calculateRisk);
+const ficoInput = document.getElementById("fico-input");
+const dtiInput = document.getElementById("dti-input");
+const incomeInput = document.getElementById("income-input");
+const predictBtn = document.getElementById("predict-btn");
+
+function updateSliderLabels() {
+  const unemp = parseFloat(unemploymentSlider.value);
+  const cpi = parseFloat(cpiSlider.value);
+  const unempChange = parseFloat(unempChangeSlider.value);
+
+  unemploymentVal.textContent = `${unemp.toFixed(1)}%`;
+  cpiVal.textContent = `${cpi.toFixed(1)}%`;
+  unempChangeVal.textContent = `${unempChange >= 0 ? "+" : ""}${unempChange.toFixed(1)}%`;
+}
+
+// Live update slider labels during drag without recomputing whole model until Predict clicked
+unemploymentSlider.addEventListener("input", updateSliderLabels);
+cpiSlider.addEventListener("input", updateSliderLabels);
+unempChangeSlider.addEventListener("input", updateSliderLabels);
+
+// Predict button listener
+if (predictBtn) {
+  predictBtn.addEventListener("click", () => {
+    // Add brief click animation feedback
+    predictBtn.style.transform = "scale(0.98)";
+    setTimeout(() => {
+      predictBtn.style.transform = "";
+    }, 120);
+    calculateRisk();
+  });
+}
+
+// Quick Stress Scenario Presets Listener
+document.querySelectorAll(".preset-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    unemploymentSlider.value = btn.dataset.unemp;
+    cpiSlider.value = btn.dataset.cpi;
+    unempChangeSlider.value = btn.dataset.chg;
+    updateSliderLabels();
+    calculateRisk();
+  });
 });
 
 // Initial calculation on page load
 calculateRisk();
+
