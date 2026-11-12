@@ -178,16 +178,19 @@ input[type="range"] {
 
 .borrower-inputs label {
   display: block;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
 }
 
 .borrower-inputs input {
   width: 100%;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
+  color: var(--text-primary);
 }
 
 .output-panel {
