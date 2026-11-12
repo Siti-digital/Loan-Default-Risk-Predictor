@@ -1,36 +1,36 @@
 // Client-side Logistic Sigmoid Inference Engine for Macroeconomic Sensitivity Explorer
 // Strictly evaluates Model C (Borrower + Macro Logistic Regression)
-// Formula: P(Default) = 1 / (1 + exp(-(beta_0 + sum(beta_i * (X_i - mu_i) / sigma_i))))
+// Formula: P(Default) = 1 / (1 + exp(-(effective_intercept + sum(beta_i * (X_i - mu_i) / sigma_i))))
 // Note: Model D (LightGBM) is evaluated offline in Python; tree ensembles are NOT approximated by this sigmoid formula.
 
-// Default baseline parameters (populated dynamically from model_coefficients.json once Model C is trained)
+// Default fallback parameters (populated dynamically from model_coefficients.json once exported)
 let modelParams = {
   model_id: "Model_C_Logit",
-  description: "Fitted Model C (Borrower + Macro) Logistic Regression Parameters",
-  intercept: -1.75,
+  description: "Fitted Model C (Borrower + Macro) Logistic Regression Parameters (Trained on 2007-2014)",
+  effective_intercept: -1.89598,
   weights: {
-    fico_score: -0.45,
-    dti: 0.32,
-    annual_income_log: -0.28,
-    unemployment_rate: 0.25,
-    cpi_inflation_rate: 0.12,
-    unemp_change_6m: 0.18
+    fico_score: -0.401139,
+    dti: 0.145846,
+    annual_income: -0.245381,
+    unemployment_rate: -0.034996,
+    cpi_inflation_rate: 0.057986,
+    unemp_change_6m: 0.075759
   },
   variable_means: {
-    fico_score: 698.0,
-    dti: 17.5,
-    annual_income_log: 11.12,
-    unemployment_rate: 6.8,
-    cpi_inflation_rate: 1.8,
-    unemp_change_6m: 0.05
+    fico_score: 693.385,
+    dti: 17.525,
+    annual_income: 72836.4,
+    unemployment_rate: 7.738,
+    cpi_inflation_rate: 1.865,
+    unemp_change_6m: -0.198
   },
   variable_stds: {
-    fico_score: 32.0,
-    dti: 8.2,
-    annual_income_log: 0.55,
-    unemployment_rate: 1.9,
-    cpi_inflation_rate: 1.4,
-    unemp_change_6m: 0.65
+    fico_score: 30.134,
+    dti: 7.892,
+    annual_income: 55595.2,
+    unemployment_rate: 1.637,
+    cpi_inflation_rate: 1.346,
+    unemp_change_6m: 0.584
   }
 };
 
@@ -44,20 +44,49 @@ const BENIGN_BASELINE = {
   income: 70000
 };
 
-// Attempt to fetch dynamically exported coefficients from model_coefficients.json
+// Fetch dynamically exported coefficients from model_coefficients.json
 fetch("model_coefficients.json")
   .then((res) => {
     if (res.ok) return res.json();
     throw new Error("Local JSON fetch skipped (using embedded fallback)");
   })
   .then((data) => {
-    if (data.intercept && data.weights) {
+    if (data.weights) {
       modelParams = data;
       calculateRisk();
     }
   })
   .catch((err) => {
     console.log("Using built-in model parameters:", err.message);
+  });
+
+// Fetch holdout benchmark results to populate the model comparison table
+fetch("benchmark_results.json")
+  .then((res) => {
+    if (res.ok) return res.json();
+    throw new Error("Local benchmark JSON not found");
+  })
+  .then((data) => {
+    const tbody = document.getElementById("benchmark-table-body");
+    if (!tbody || !data.models) return;
+    tbody.innerHTML = "";
+    data.models.forEach((m) => {
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid #e2e8f0";
+      tr.innerHTML = `
+        <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${m.Model}</td>
+        <td style="padding: 0.5rem 0.75rem; color: #64748b;">${m.Calibration || "unweighted"}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["PR-AUC"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["ROC-AUC"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${m["Brier_Score"].toFixed(4)}</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Mean_Pred_PD"] * 100).toFixed(2)}%</td>
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace;">${(m["Actual_DR"] * 100).toFixed(2)}%</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })
+  .catch((err) => {
+    console.log("Benchmark table loader:", err.message);
   });
 
 // DOM Elements
@@ -82,21 +111,38 @@ function sigmoid(z) {
 }
 
 function computePD(unemp, cpi, unempChange, fico, dti, income) {
-  const logIncome = Math.log(Math.max(income, 1000));
-  
+  const effectiveIntercept =
+    modelParams.effective_intercept !== undefined
+      ? modelParams.effective_intercept
+      : modelParams.intercept;
+
   // Standardized inputs using training partition parameters
-  const z_fico = (fico - modelParams.variable_means.fico_score) / (modelParams.variable_stds?.fico_score || 32);
-  const z_dti = (dti - modelParams.variable_means.dti) / (modelParams.variable_stds?.dti || 8.2);
-  const z_income = (logIncome - modelParams.variable_means.annual_income_log) / (modelParams.variable_stds?.annual_income_log || 0.55);
-  const z_unemp = (unemp - modelParams.variable_means.unemployment_rate) / (modelParams.variable_stds?.unemployment_rate || 1.9);
-  const z_cpi = (cpi - modelParams.variable_means.cpi_inflation_rate) / (modelParams.variable_stds?.cpi_inflation_rate || 1.4);
-  const z_unemp_change = (unempChange - modelParams.variable_means.unemp_change_6m) / (modelParams.variable_stds?.unemp_change_6m || 0.65);
+  const z_fico = (fico - modelParams.variable_means.fico_score) / (modelParams.variable_stds?.fico_score || 30.134);
+  const z_dti = (dti - modelParams.variable_means.dti) / (modelParams.variable_stds?.dti || 7.892);
+
+  const incMean =
+    modelParams.variable_means.annual_income !== undefined
+      ? modelParams.variable_means.annual_income
+      : (modelParams.variable_means.annual_income_log || 72836.4);
+  const incStd =
+    modelParams.variable_stds?.annual_income !== undefined
+      ? modelParams.variable_stds.annual_income
+      : (modelParams.variable_stds?.annual_income_log || 55595.2);
+  const z_income = (income - incMean) / incStd;
+  const w_income =
+    modelParams.weights.annual_income !== undefined
+      ? modelParams.weights.annual_income
+      : modelParams.weights.annual_income_log;
+
+  const z_unemp = (unemp - modelParams.variable_means.unemployment_rate) / (modelParams.variable_stds?.unemployment_rate || 1.637);
+  const z_cpi = (cpi - modelParams.variable_means.cpi_inflation_rate) / (modelParams.variable_stds?.cpi_inflation_rate || 1.346);
+  const z_unemp_change = (unempChange - modelParams.variable_means.unemp_change_6m) / (modelParams.variable_stds?.unemp_change_6m || 0.584);
 
   const z =
-    modelParams.intercept +
+    effectiveIntercept +
     modelParams.weights.fico_score * z_fico +
     modelParams.weights.dti * z_dti +
-    modelParams.weights.annual_income_log * z_income +
+    w_income * z_income +
     modelParams.weights.unemployment_rate * z_unemp +
     modelParams.weights.cpi_inflation_rate * z_cpi +
     modelParams.weights.unemp_change_6m * z_unemp_change;

@@ -1,29 +1,80 @@
 {
   "model_id": "Model_C_Logit",
-  "description": "Fitted Model C (Borrower + Macro) Logistic Regression Parameters (Pre-Training Baseline)",
-  "intercept": -1.75,
+  "description": "Fitted Model C (Borrower + Macro) Logistic Regression Parameters (Trained on 2007-2014)",
+  "effective_intercept": -1.8959807469383803,
+  "raw_intercept": -1.4862096537899367,
   "weights": {
-    "fico_score": -0.45,
-    "dti": 0.32,
-    "annual_income_log": -0.28,
-    "unemployment_rate": 0.25,
-    "cpi_inflation_rate": 0.12,
-    "unemp_change_6m": 0.18
+    "fico_score": -0.40113882878110785,
+    "dti": 0.14584635304725918,
+    "annual_income": -0.24538071015060794,
+    "unemployment_rate": -0.034996368210335055,
+    "cpi_inflation_rate": 0.05798560413536804,
+    "unemp_change_6m": 0.07575911992437484
   },
   "variable_means": {
-    "fico_score": 698.0,
-    "dti": 17.5,
-    "annual_income_log": 11.12,
-    "unemployment_rate": 6.8,
-    "cpi_inflation_rate": 1.8,
-    "unemp_change_6m": 0.05
+    "fico_score": 696.2645559653557,
+    "dti": 16.778278562844477,
+    "annual_income": 70906.49615752113,
+    "unemployment_rate": 7.141561240135687,
+    "cpi_inflation_rate": 1.7360635696821518,
+    "unemp_change_6m": -0.45179170835380683
   },
   "variable_stds": {
-    "fico_score": 32.0,
-    "dti": 8.2,
-    "annual_income_log": 0.55,
-    "unemployment_rate": 1.9,
-    "cpi_inflation_rate": 1.4,
-    "unemp_change_6m": 0.65
+    "fico_score": 31.38043121000249,
+    "dti": 7.855469273638303,
+    "annual_income": 56789.495599074806,
+    "unemployment_rate": 0.9967807351253142,
+    "cpi_inflation_rate": 0.6558295730459046,
+    "unemp_change_6m": 0.37910661996016876
+  },
+  "full_model": {
+    "coefficients": {
+      "num__annual_inc": -0.24538071015060794,
+      "num__dti": 0.14584635304725918,
+      "num__fico_range_low": -0.2005757483079688,
+      "num__fico_range_high": -0.20056308047313903,
+      "num__open_acc": 0.013686788190335928,
+      "num__pub_rec": -0.0020366444588866346,
+      "num__revol_util": -0.014316588972902923,
+      "num__mort_acc": -0.08360157781665033,
+      "num__loan_amnt": 0.09978263688390322,
+      "num__UNRATE": -0.034996368210335055,
+      "num__UNRATE_change_6m": 0.07575911992437484,
+      "num__CPI_YoY_Inflation": 0.05798560413536804,
+      "cat__home_ownership_ANY": -0.00012044538039666605,
+      "cat__home_ownership_MORTGAGE": -0.5845589921683021,
+      "cat__home_ownership_NONE": -0.0009138525787783064,
+      "cat__home_ownership_OTHER": -0.0028780679261713486,
+      "cat__home_ownership_OWN": -0.487246655330435,
+      "cat__home_ownership_RENT": -0.4097710931484435
+    },
+    "means": {
+      "annual_inc": 70906.49615752113,
+      "dti": 16.778278562844477,
+      "fico_range_low": 696.2645559653557,
+      "fico_range_high": 700.2646240461291,
+      "open_acc": 10.948930539850933,
+      "pub_rec": 0.1677835860215372,
+      "revol_util": 54.952619570558326,
+      "mort_acc": 1.6058833628350018,
+      "loan_amnt": 12211.81171818112,
+      "UNRATE": 7.141561240135687,
+      "UNRATE_change_6m": -0.45179170835380683,
+      "CPI_YoY_Inflation": 1.7360635696821518
+    },
+    "stds": {
+      "annual_inc": 56789.495599074806,
+      "dti": 7.855469273638303,
+      "fico_range_low": 31.38043121000249,
+      "fico_range_high": 31.380754978966962,
+      "open_acc": 4.934056012859121,
+      "pub_rec": 0.531168629695474,
+      "revol_util": 23.865818668999907,
+      "mort_acc": 2.0138530414350573,
+      "loan_amnt": 7527.333622753492,
+      "UNRATE": 0.9967807351253142,
+      "UNRATE_change_6m": 0.37910661996016876,
+      "CPI_YoY_Inflation": 0.6558295730459046
+    }
   }
 }
