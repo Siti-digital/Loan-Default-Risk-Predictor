@@ -3,48 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Macroeconomic Sensitivity Explorer | ES 335 Credit Risk</title>
+  <title>Loan Default Risk Predictor | ES 335 Credit Risk</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <div class="container header-container">
       <div>
-        <h1>Macro-Aware Credit Risk: Origination-Time Sensitivity Explorer</h1>
+        <h1>Loan Default Risk Predictor</h1>
         <p class="subtitle">ES 335 Machine Learning | IIT Gandhinagar | Quantitative Risk & Analytics</p>
       </div>
-      <div class="badge">Static GitHub Pages Deployable</div>
     </div>
   </header>
 
   <main class="container">
-    <section class="card intro-card">
-      <h2>Project Overview & Research Question</h2>
-      <p>
-        <strong>Core Research Question:</strong> Do macroeconomic indicators (civilian unemployment rate, 6-month unemployment change, CPI inflation)
-        significantly improve retail loan default prediction compared to traditional credit models relying strictly on individual borrower profiles?
+    <!-- Interactive Sensitivity & Risk Explorer (Moved to the Top) -->
+    <section class="card interactive-card">
+      <h2>Origination-Time Sensitivity & Risk Explorer</h2>
+      <p style="margin-bottom: 1.5rem; color: #475569;">
+        Adjust macroeconomic conditions and borrower application details below, then click <strong>Predict Default Risk</strong>:
       </p>
-      <div class="metrics-grid">
-        <div class="metric-box">
-          <span class="metric-title">Unit of Analysis</span>
-          <span class="metric-val">Single 36-Month Loan</span>
+
+      <div class="simulator-layout">
+        <!-- Controls -->
+        <div class="controls-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h3 style="margin: 0;">Origination Macroeconomic Levers</h3>
+            <span style="font-size: 0.75rem; color: #64748b;">Clamped to 2007–2014 Training Range</span>
+          </div>
+
+          <!-- Quick Stress Scenario Presets -->
+          <div style="margin-bottom: 1.25rem;">
+            <small style="color: #475569; font-weight: 600; display: block; margin-bottom: 0.4rem;">Quick Stress Presets:</small>
+            <div class="preset-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="preset-btn" data-unemp="5.0" data-cpi="2.0" data-chg="0.0">Calm Baseline</button>
+              <button type="button" class="preset-btn" data-unemp="6.8" data-cpi="3.2" data-chg="0.8">Mild Slowdown</button>
+              <button type="button" class="preset-btn" data-unemp="9.8" data-cpi="4.5" data-chg="2.0">Acute 2008 Recession Shock</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="unemployment-slider">National Unemployment Rate (UNRATE):</label>
+              <span id="unemployment-val" class="slider-val">5.0%</span>
+            </div>
+            <input type="range" id="unemployment-slider" min="4.0" max="10.0" step="0.1" value="5.0">
+            <small class="hint">Range: 4.0% to 10.0% (Oct 2009 Recession Peak)</small>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="cpi-slider">CPI Year-over-Year Inflation:</label>
+              <span id="cpi-val" class="slider-val">2.0%</span>
+            </div>
+            <input type="range" id="cpi-slider" min="-2.0" max="5.5" step="0.1" value="2.0">
+            <small class="hint">Range: -2.0% to 5.5% (July 2008 Commodity Peak)</small>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="unemp-change-slider">6-Month Change in Unemployment (Shock Velocity):</label>
+              <span id="unemp-change-val" class="slider-val">0.0%</span>
+            </div>
+            <input type="range" id="unemp-change-slider" min="-1.5" max="2.5" step="0.1" value="0.0">
+            <small class="hint">Range: -1.5% to +2.5% (Acute Shock)</small>
+          </div>
+
+          <h3 style="margin-top: 1.5rem;">Representative Borrower Application Profile</h3>
+          <div class="borrower-inputs">
+            <div>
+              <label for="fico-input">FICO Score:</label>
+              <input type="number" id="fico-input" value="690" min="660" max="850">
+            </div>
+            <div>
+              <label for="dti-input">DTI (%):</label>
+              <input type="number" id="dti-input" value="18" min="0" max="40">
+            </div>
+            <div>
+              <label for="income-input">Annual Income ($):</label>
+              <input type="number" id="income-input" value="70000" min="20000" max="300000" step="5000">
+            </div>
+          </div>
+
+          <!-- Predict Button -->
+          <button id="predict-btn" class="predict-button" type="button">
+            Predict Default Risk
+          </button>
         </div>
-        <div class="metric-box">
-          <span class="metric-title">Temporal Leakage Check</span>
-          <span class="metric-val">2-Month Publication Lag</span>
-        </div>
-        <div class="metric-box">
-          <span class="metric-title">Validation Method</span>
-          <span class="metric-val">Out-of-Time 2015 Holdout</span>
-        </div>
-        <div class="metric-box">
-          <span class="metric-title">Target Objective</span>
-          <span class="metric-val">Calibrated PD: P(Y=1|X)</span>
+
+        <!-- Output Display -->
+        <div class="output-panel">
+          <h3>Model-Based Sensitivity Estimate</h3>
+          <div class="gauge-container">
+            <div class="gauge-circle" id="risk-gauge">
+              <span id="pd-percentage">14.2%</span>
+              <span class="gauge-label">Probability of Default</span>
+            </div>
+          </div>
+
+          <div class="risk-badge" id="risk-status">Moderate Risk</div>
+
+          <div class="scenario-summary">
+            <h4>Macro Sensitivity Delta</h4>
+            <p id="delta-summary">Default odds changed by <strong>+0.0%</strong> relative to benign baseline.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Model Comparison Architecture -->
+    <!-- Model Comparison Architecture & Holdout Benchmark Scorecard -->
     <section class="card architecture-card">
       <h2>Experimental Model Architecture</h2>
       <p>Models are strictly separated to isolate the marginal predictive power of macroeconomic conditions at origination:</p>
@@ -93,140 +160,6 @@
             <!-- Populated dynamically via script.js from benchmark_results.json -->
           </tbody>
         </table>
-      </div>
-    </section>
-
-    <!-- Interactive Sensitivity Explorer -->
-    <section class="card interactive-card">
-      <h2>Origination-Time Macroeconomic Sensitivity & What-If Explorer</h2>
-      <p>
-        Adjust origination-time macroeconomic condition levers below. Holding borrower characteristics constant, this tool computes the model-estimated Probability of Default (PD) for <strong>Model C (Borrower + Macro Logistic Regression)</strong> using the client-side logistic sigmoid engine:
-      </p>
-      <div class="formula-box">
-        <code>P(Default) = 1 / (1 + e<sup>-(β₀ + Σ βᵢ · (Xᵢ - μᵢ) / σᵢ)</sup>)</code>
-      </div>
-      <p class="architecture-note" style="font-size: 0.85rem; color: #64748b; margin-top: -0.5rem; margin-bottom: 1rem;">
-        <em>Note: Preprocessing means (μ) and standard deviations (σ) along with linear weights (β) are strictly derived from Model C. Model D (LightGBM) is a non-linear gradient-boosted decision tree ensemble evaluated offline in Python benchmarks; it is not represented by linear coefficients or sigmoid approximations.</em>
-      </p>
-
-      <div class="simulator-layout">
-        <!-- Controls -->
-        <div class="controls-panel">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
-            <h3 style="margin: 0;">Origination Macroeconomic Levers</h3>
-            <span style="font-size: 0.75rem; color: #64748b;">Clamped to 2007–2014 Range</span>
-          </div>
-
-          <!-- Quick Stress Scenario Presets -->
-          <div style="margin-bottom: 1.25rem;">
-            <small style="color: #475569; font-weight: 600; display: block; margin-bottom: 0.4rem;">Quick Stress Presets:</small>
-            <div class="preset-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button type="button" class="preset-btn" data-unemp="5.0" data-cpi="2.0" data-chg="0.0">Calm Baseline</button>
-              <button type="button" class="preset-btn" data-unemp="6.8" data-cpi="3.2" data-chg="0.8">Mild Slowdown</button>
-              <button type="button" class="preset-btn" data-unemp="9.8" data-cpi="4.5" data-chg="2.0">Acute 2008 Recession Shock</button>
-            </div>
-          </div>
-
-          <div class="control-group">
-            <div class="control-header">
-              <label for="unemployment-slider">National Unemployment Rate (UNRATE):</label>
-              <span id="unemployment-val" class="slider-val">5.0%</span>
-            </div>
-            <input type="range" id="unemployment-slider" min="4.0" max="10.0" step="0.1" value="5.0">
-            <small class="hint">Observed Training Range: 4.4% (Late 2007) to 10.0% (Oct 2009 Recession Peak)</small>
-          </div>
-
-          <div class="control-group">
-            <div class="control-header">
-              <label for="cpi-slider">CPI Year-over-Year Inflation:</label>
-              <span id="cpi-val" class="slider-val">2.0%</span>
-            </div>
-            <input type="range" id="cpi-slider" min="-2.0" max="5.5" step="0.1" value="2.0">
-            <small class="hint">Observed Training Range: -2.1% (July 2009 Deflation) to 5.4% (July 2008 Commodity Peak)</small>
-          </div>
-
-          <div class="control-group">
-            <div class="control-header">
-              <label for="unemp-change-slider">6-Month Change in Unemployment (Shock Velocity):</label>
-              <span id="unemp-change-val" class="slider-val">0.0%</span>
-            </div>
-            <input type="range" id="unemp-change-slider" min="-1.5" max="2.5" step="0.1" value="0.0">
-            <small class="hint">Observed Training Range: -1.2% (Rapid Recovery) to +2.3% (Acute Shock)</small>
-          </div>
-
-          <small class="macro-dynamics-note" style="display: block; font-size: 0.78rem; color: #64748b; background: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #3b82f6; margin-top: 0.5rem;">
-            <strong>Econometric Dynamics:</strong> Loan defaults are primarily triggered by <em>rapid unemployment shocks</em> (positive 6-month change) rather than static high levels where lenders tighten underwriting standards. To simulate a true recession shock, increase both UNRATE and the 6-Month Change.
-          </small>
-
-          <h3 style="margin-top: 1.5rem;">Representative Borrower Application Profile</h3>
-          <div class="borrower-inputs">
-            <div>
-              <label for="fico-input">FICO Score:</label>
-              <input type="number" id="fico-input" value="690" min="660" max="850">
-            </div>
-            <div>
-              <label for="dti-input">DTI (%):</label>
-              <input type="number" id="dti-input" value="18" min="0" max="40">
-            </div>
-            <div>
-              <label for="income-input">Annual Income ($):</label>
-              <input type="number" id="income-input" value="70000" min="20000" max="300000" step="5000">
-            </div>
-          </div>
-
-          <!-- Predict Button -->
-          <button id="predict-btn" class="predict-button" type="button">
-            Predict Default Risk
-          </button>
-        </div>
-
-        <!-- Output Display -->
-        <div class="output-panel">
-          <h3>Model-Based Sensitivity Estimate</h3>
-          <div class="gauge-container">
-            <div class="gauge-circle" id="risk-gauge">
-              <span id="pd-percentage">14.2%</span>
-              <span class="gauge-label">Probability of Default</span>
-            </div>
-          </div>
-
-          <div class="risk-badge" id="risk-status">Moderate Risk</div>
-
-          <div class="scenario-summary">
-            <h4>Macro Sensitivity Delta</h4>
-            <p id="delta-summary">Default odds changed by <strong>+0.0%</strong> relative to benign baseline.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Critical Econometric Disclaimers -->
-      <div class="disclaimer-box">
-        <h4>Methodological & Econometric Scope Disclaimers</h4>
-        <ul>
-          <li><strong>Not a Lifetime Forecasting Tool:</strong> This model estimates default probability based strictly on economic conditions prevailing <em>at origination</em>. It does NOT predict how an active loan performs if unemployment spikes 18 months into repayment (a hazard model with time-varying covariates is required for lifetime trajectory stress testing).</li>
-          <li><strong>Observational Association, Not Causality:</strong> Estimated coefficients capture predictive associations across vintages and do not establish causal treatment effects.</li>
-          <li><strong>Interpolation Only:</strong> Slider ranges are strictly clamped to the empirical historical bounds observed during the 2007–2014 training window to prevent ungrounded extrapolation.</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- Methodology & Rubric Defense -->
-    <section class="card methodology-card">
-      <h2>Methodology & Statistical Defenses</h2>
-      <div class="grid-2">
-        <div>
-          <h3>Rigorous Out-of-Time (OOT) Split</h3>
-          <p>
-            Avoids standard random K-Fold cross-validation which leaks temporal dependencies. 
-            Trains chronologically on <strong>2007–2014</strong> (including the Great Recession shock) and validates out-of-time on the fully matured <strong>2015 cohort</strong> (0.05% unresolved rate).
-          </p>
-        </div>
-        <div>
-          <h3>Zero Look-Ahead Macro Alignment</h3>
-          <p>
-            Macro series are shifted by a conservative <strong>2-month publication lag</strong>, ensuring that loans originated on the 1st of month <em>t</em> receive macroeconomic data published and verified available prior to origination.
-          </p>
-        </div>
       </div>
     </section>
   </main>
