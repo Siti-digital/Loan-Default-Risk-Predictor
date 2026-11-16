@@ -335,3 +335,69 @@ code { overflow-wrap: anywhere; }
 .grid-2 > *, .grid-3 > *, .grid-4 > *, .explorer > *, .stack > * { min-width: 0; }
 @media (max-width: 760px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 900px) { .explorer { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Hero: circular Predict call-to-action ---------- */
+.hero-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 48px; align-items: center; }
+.hero-copy { min-width: 0; }
+.predict-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 0 3% 0 0; }
+.predict-cta {
+  position: relative; width: 208px; height: 208px; border-radius: 50%; display: grid; place-items: center;
+  color: #fff; text-decoration: none; isolation: isolate;
+  background: radial-gradient(circle at 32% 26%, #8b7bff 0%, #533afd 52%, #3a22d6 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.28), 0 26px 60px -14px rgba(83, 58, 253, 0.9), 0 0 90px rgba(83, 58, 253, 0.5);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.predict-cta::before, .predict-cta::after {
+  content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 2px solid rgba(160, 146, 255, 0.6);
+  z-index: -1; animation: predict-pulse 2.6s ease-out infinite; pointer-events: none;
+}
+.predict-cta::after { animation-delay: 1.3s; }
+.predict-cta:hover { text-decoration: none; transform: scale(1.05); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4), 0 30px 70px -12px rgba(83, 58, 253, 1), 0 0 120px rgba(83, 58, 253, 0.65); }
+.predict-cta:active { transform: scale(0.98); }
+.predict-cta:focus-visible { outline: 3px solid #fff; outline-offset: 8px; }
+.predict-core { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.predict-core svg { width: 34px; height: 34px; margin-bottom: 2px; }
+.predict-label { font-size: 1.85rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.predict-sub { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #ddd8ff; }
+.predict-caption { margin: 0; font-size: 0.86rem; line-height: 1.45; color: #b9c3d6; text-align: center; max-width: 23ch; }
+@keyframes predict-pulse { 0% { transform: scale(0.94); opacity: 0.9; } 100% { transform: scale(1.32); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .predict-cta::before, .predict-cta::after { animation: none; opacity: 0.5; } }
+@media (max-width: 900px) {
+  .hero-top { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .predict-wrap { flex-direction: row; justify-content: flex-start; gap: 22px; padding: 4px 0 44px 12px; }
+  .predict-cta { width: 136px; height: 136px; flex: none; }
+  .predict-core svg { width: 26px; height: 26px; }
+  .predict-label { font-size: 1.35rem; }
+  .predict-sub { font-size: 0.64rem; }
+  .predict-caption { text-align: left; }
+  .hero-actions { margin-bottom: 36px; }
+}
+/* stronger separation from the hero's indigo stripe */
+.predict-wrap { position: relative; }
+.predict-wrap::before {
+  content: ""; position: absolute; left: 50%; top: 112px; width: 400px; height: 400px; transform: translate(-50%, -50%);
+  border-radius: 50%; background: radial-gradient(circle, rgba(6, 11, 24, 0.78) 0%, rgba(6, 11, 24, 0.45) 45%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+.predict-wrap > * { position: relative; z-index: 1; }
+.predict-cta {
+  width: 220px; height: 220px;
+  background: radial-gradient(circle at 32% 24%, #a99dff 0%, #6a52ff 42%, #4a2ff0 100%);
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.10), 0 0 0 8px rgba(255, 255, 255, 0.38),
+              0 28px 64px -14px rgba(83, 58, 253, 0.95), 0 0 110px rgba(120, 100, 255, 0.55);
+}
+.predict-cta:hover { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.16), 0 0 0 8px rgba(255, 255, 255, 0.6), 0 32px 72px -12px rgba(83, 58, 253, 1), 0 0 140px rgba(120, 100, 255, 0.7); }
+.predict-cta::before, .predict-cta::after { inset: -16px; border-color: rgba(255, 255, 255, 0.55); }
+.predict-caption { color: #d7deea; }
+@media (max-width: 900px) {
+  .predict-wrap::before { left: 80px; top: 72px; width: 260px; height: 260px; }
+  .predict-cta { width: 140px; height: 140px; }
+}
+/* phones: show Predict right after the intro, before the secondary buttons */
+@media (max-width: 900px) {
+  .hero-copy { display: contents; }
+  .hero-copy > .eyebrow, .hero-copy > h1, .hero-copy > .lede { order: 0; }
+  .predict-wrap { order: 1; padding: 6px 0 30px 12px; }
+  .hero-copy > .hero-actions { order: 2; margin-top: 0; }
+  .hero-copy > .eyebrow { justify-self: start; }
+}

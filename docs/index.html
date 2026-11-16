@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/site.css?v=7">
+  <link rel="stylesheet" href="assets/css/site.css?v=11">
   <script>
     try { var t = localStorage.getItem('site-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
@@ -48,19 +48,32 @@
 
 <header class="hero" id="top">
   <div class="wrap">
-    <span class="eyebrow">ES 335 Machine Learning · IIT Gandhinagar</span>
-    <h1>Does the economy at origination predict who defaults?</h1>
-    <p class="lede">
-      We test whether national unemployment, its recent change and inflation, all known when a loan is issued, improve default prediction
-      beyond the borrower's own application. On <strong data-k="test_loans">283,026</strong> loans from 2015 that the models never saw,
-      <strong>they do not</strong>: borrower data carry the signal, and adding macro data leaves ranking unchanged and pushes the predicted
-      default rate further from the real one.
-    </p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="#results">See the evidence
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-      <a class="btn btn-ghost" href="#explorer">Try the explorer</a>
-      <a class="btn btn-ghost" href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor">Code &amp; notebook</a>
+    <div class="hero-top">
+      <div class="hero-copy">
+        <span class="eyebrow">ES 335 Machine Learning · IIT Gandhinagar</span>
+        <h1>Does the economy at origination predict who defaults?</h1>
+        <p class="lede">
+          We test whether national unemployment, its recent change and inflation, all known when a loan is issued, improve default prediction
+          beyond the borrower's own application. On <strong data-k="test_loans">283,026</strong> loans from 2015 that the models never saw,
+          <strong>they do not</strong>: borrower data carry the signal, and adding macro data leaves ranking unchanged and pushes the predicted
+          default rate further from the real one.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-ghost" href="#results">See the evidence
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-ghost" href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor">Code &amp; notebook</a>
+        </div>
+      </div>
+      <div class="predict-wrap">
+        <a class="predict-cta" href="#explorer" aria-label="Predict: open the default-risk explorer">
+          <span class="predict-core">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 3 8-9"/><path d="M15 5h5v5"/></svg>
+            <span class="predict-label">Predict</span>
+            <span class="predict-sub">Run the model</span>
+          </span>
+        </a>
+        <p class="predict-caption">Score a borrower with the trained models and change the economy around them</p>
+      </div>
     </div>
     <div class="kpis">
       <div class="kpi"><div class="v" data-k="cohort_loans">620,860</div><div class="l">matured 36-month loans, 2007–2015</div></div>
@@ -726,7 +739,7 @@
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged figure"><img alt=""></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="assets/data/site-data.js?v=7"></script>
-<script src="assets/js/site.js?v=7"></script>
+<script src="assets/data/site-data.js?v=11"></script>
+<script src="assets/js/site.js?v=11"></script>
 </body>
 </html>
