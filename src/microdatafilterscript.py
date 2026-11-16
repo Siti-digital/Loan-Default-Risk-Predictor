@@ -22,32 +22,25 @@ def filter_microdata(
     # 2. Borrower Profile: annual_inc, dti, fico_range_low, fico_range_high, open_acc, pub_rec, revol_util, mort_acc, home_ownership, loan_amnt, term
     # 3. Candidate Extended Attributes (if available in raw file): addr_state, purpose, emp_length, verification_status, earliest_cr_line, revol_bal
     # 4. Lender-determined Benchmark: int_rate, installment, grade, sub_grade
+    # Exactly the 15 columns in data/processed/microdataprocessed.csv used by the notebook.
+    # Other application-time fields (addr_state, purpose, emp_length, verification_status,
+    # earliest_cr_line, revol_bal, grade, sub_grade) are candidates for future work.
     full_allowlist = [
-        'issue_d',           # Origination date for chronological PIT macro merging
-        'loan_status',       # Target: Fully Paid vs Charged Off
-        'loan_amnt',         # Requested and approved principal amount ($)
-        'term',              # Loan duration (36 vs 60 months)
-        'home_ownership',    # RENT, OWN, MORTGAGE, OTHER
-        'annual_inc',        # Self-reported borrower annual income ($)
-        'dti',               # Debt-to-Income ratio
-        'fico_range_low',    # Application FICO lower bound
-        'fico_range_high',   # Application FICO upper bound
-        'open_acc',          # Number of active credit lines
+        'issue_d',           # Origination month, used for the point-in-time macro merge and the time split
+        'loan_status',       # Outcome: Fully Paid / Charged Off / Default / Current / Late ...
+        'loan_amnt',         # Approved principal ($)
+        'term',              # 36 or 60 months
+        'int_rate',          # Interest rate set by LendingClub (lender benchmark only)
+        'installment',       # Monthly payment set by LendingClub (lender benchmark only)
+        'home_ownership',    # RENT, OWN, MORTGAGE, OTHER, NONE, ANY
+        'annual_inc',        # Self-reported annual income ($)
+        'dti',               # Debt-to-income ratio (%)
+        'fico_range_low',    # FICO band lower bound at application
+        'fico_range_high',   # FICO band upper bound at application
+        'open_acc',          # Open credit lines
         'pub_rec',           # Derogatory public records
-        'revol_util',        # Revolving credit utilization rate (%)
-        'mort_acc',          # Number of mortgage accounts
-        # Extended candidate columns
-        'addr_state',        # Borrower state of residence (for state macro matching)
-        'purpose',           # Stated loan purpose (debt_consolidation, credit_card, etc.)
-        'emp_length',        # Employment length in years
-        'verification_status', # Income verification status
-        'earliest_cr_line',  # Month borrower opened earliest credit line
-        'revol_bal',         # Total credit revolving balance ($)
-        # Lender-determined risk pricing benchmark features
-        'int_rate',          # Contractual loan interest rate (%)
-        'installment',       # Monthly repayment payment ($)
-        'grade',             # LendingClub assigned risk grade (A-G)
-        'sub_grade'          # LendingClub assigned sub-grade (A1-G5)
+        'revol_util',        # Revolving utilisation (%)
+        'mort_acc'           # Mortgage accounts (not recorded before 2012)
     ]
     
     # Read sample to detect which columns actually exist in raw CSV

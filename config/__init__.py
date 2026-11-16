@@ -12,10 +12,9 @@ from typing import List, Dict, Any
 # Model B: Primary Borrower-Only Feature Set (Strictly pre-origination)
 # Note: Excludes lender risk-pricing outputs ('int_rate', 'installment', 'grade', 'sub_grade')
 BORROWER_NUMERICAL_FEATURES: List[str] = [
-    'annual_inc',
+    'annual_inc',          # log1p-transformed inside the pipeline (see LOG_TRANSFORM_FEATURES)
     'dti',
-    'fico_range_low',
-    'fico_range_high',
+    'fico_avg',            # midpoint of fico_range_low / fico_range_high (the two differ by a constant 4 points)
     'open_acc',
     'pub_rec',
     'revol_util',
@@ -25,6 +24,12 @@ BORROWER_NUMERICAL_FEATURES: List[str] = [
 
 BORROWER_CATEGORICAL_FEATURES: List[str] = [
     'home_ownership'
+]
+
+# Heavy right-skewed features that are log1p-transformed before imputation/scaling.
+# Chosen on the 2013/2014 CV folds only (raw vs log income check in Phase 5), never on the 2015 test set.
+LOG_TRANSFORM_FEATURES: List[str] = [
+    'annual_inc'
 ]
 
 # Primary Macroeconomic Indicators (Stationary, interpretable, non-redundant)
@@ -63,12 +68,27 @@ FEATURE_GROUPS: Dict[str, Dict[str, Any]] = {
         'categorical': BORROWER_CATEGORICAL_FEATURES,
         'macro': PRIMARY_MACRO_FEATURES
     },
+    'MODEL_D_BASE': {
+        'name': 'Borrower-Only LightGBM',
+        'description': 'Same information set as Model B, fitted with gradient boosted trees (non-linear borrower benchmark).',
+        'numerical': BORROWER_NUMERICAL_FEATURES,
+        'categorical': BORROWER_CATEGORICAL_FEATURES,
+        'macro': []
+    },
     'LENDER_BENCHMARK': {
         'name': 'Lender-Information Benchmark',
-        'description': 'Adds lender-determined pricing variables (int_rate, installment) to borrower features.',
+        'description': 'Adds lender-determined pricing variables (int_rate, installment) to borrower features. '
+                       'grade/sub_grade are not in the processed extract, so they are not used.',
         'numerical': BORROWER_NUMERICAL_FEATURES + ['int_rate', 'installment'],
         'categorical': BORROWER_CATEGORICAL_FEATURES,
         'macro': []
+    },
+    'MODEL_M': {
+        'name': 'Macro-Only Logistic Regression',
+        'description': 'Extra experiment: the three lagged macro features alone (how much signal does macro carry by itself?).',
+        'numerical': [],
+        'categorical': [],
+        'macro': PRIMARY_MACRO_FEATURES
     }
 }
 
@@ -124,3 +144,32 @@ TEST_END_DATE: str = '2015-12-31'
 # 4. Macroeconomic Publication Alignment
 # ==============================================================================
 MACRO_PUBLICATION_LAG_MONTHS: int = 2  # Conservative 2-month reporting lag (shift(2))
+
+# ==============================================================================
+# 5. Model Selection (expanding-window CV only) and Extra Experiments
+# ==============================================================================
+RANDOM_SEED: int = 42
+
+# Logistic regression L2 strength, selected per model by mean CV PR-AUC on the 2013 and 2014 folds
+LR_C_GRID: List[float] = [0.01, 0.1, 1.0]
+
+# LightGBM: fixed regularisation + a small grid selected by mean CV PR-AUC
+LGBM_FIXED_PARAMS: Dict[str, Any] = {
+    'min_child_samples': 200, 'subsample': 0.8, 'subsample_freq': 1, 'colsample_bytree': 0.8,
+    'reg_lambda': 10.0, 'deterministic': True, 'force_col_wise': True,
+    'random_state': RANDOM_SEED, 'n_jobs': -1, 'verbose': -1
+}
+LGBM_GRID: List[Dict[str, Any]] = [
+    {'num_leaves': 15, 'max_depth': 5, 'n_estimators': 200, 'learning_rate': 0.03},
+    {'num_leaves': 7,  'max_depth': 3, 'n_estimators': 300, 'learning_rate': 0.05},
+    {'num_leaves': 31, 'max_depth': 6, 'n_estimators': 200, 'learning_rate': 0.03},
+    {'num_leaves': 15, 'max_depth': 5, 'n_estimators': 600, 'learning_rate': 0.02},
+]
+
+# Label-availability ("embargo") experiment: on 2015-01-01 only loans issued up to 2011-12
+# have a fully observed 36-month outcome, so a model deployed then could only train on them.
+EMBARGO_TRAIN_END_DATE: str = '2011-12-31'
+
+# Bootstrap repetitions for month-level block bootstrap on the 2015 holdout
+BOOTSTRAP_REPS: int = 500
+

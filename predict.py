@@ -53,10 +53,11 @@ def score_dataframe(df_input, pkg, model_key="MODEL_C"):
 
     # Handle FICO aliases
     if "fico" in df_eval.columns:
+        # The models use fico_avg = midpoint of LendingClub's 4-point FICO band
         if "fico_range_low" not in df_eval.columns:
-            df_eval["fico_range_low"] = df_eval["fico"]
+            df_eval["fico_range_low"] = df_eval["fico"] - 2.0
         if "fico_range_high" not in df_eval.columns:
-            df_eval["fico_range_high"] = df_eval["fico"] + 4.0
+            df_eval["fico_range_high"] = df_eval["fico"] + 2.0
 
     # Fill defaults for omitted features
     defaults = {
@@ -128,7 +129,7 @@ def prompt_input(param_name, example_text, default_val, val_type=float, min_val=
 
 def run_interactive_prediction(pkg):
     """Conducts a line-by-line interactive assessment of a new loan applicant."""
-    threshold = pkg.get("prevalence_threshold", 0.148863)
+    threshold = pkg.get("prevalence_threshold", 0.13155)
 
     print("\n" + "=" * 80)
     print("  INTERACTIVE CREDIT RISK & MACRO STRESS ASSESSMENT")
@@ -269,7 +270,7 @@ def run_macro_stress_simulation(pkg):
 
     print("\nEvaluating across 5 standardized economic stress scenarios (Model C vs Model D)...\n")
     results = []
-    threshold = pkg.get("prevalence_threshold", 0.148863)
+    threshold = pkg.get("prevalence_threshold", 0.13155)
 
     for sc in scenarios:
         row_df = pd.DataFrame([{
@@ -307,7 +308,7 @@ def display_model_info(pkg):
     print(f"Training Partition   : {pkg.get('training_cohort', '2007-2014 Window')}")
     print(f"Holdout Test Cohort  : {pkg.get('holdout_test_cohort', '2015 Window (283,026 loans)')}")
     print(f"Historical Base PD   : {pkg.get('baseline_pd', 0.13155):.4%}")
-    print(f"Decision Threshold   : {pkg.get('prevalence_threshold', 0.148863):.4%}")
+    print(f"Decision Threshold   : {pkg.get('prevalence_threshold', 0.13155):.4%}")
     print("-" * 80)
     print("Features Required:")
     print(f"  * Numerical  : {pkg['features_required']['numerical']}")
@@ -340,7 +341,7 @@ def run_batch_scoring(pkg):
         df_batch = pd.read_csv(csv_path)
         print(f"Loaded {len(df_batch):,} rows. Scoring using Model C...")
         probs = score_dataframe(df_batch, pkg, model_key="MODEL_C")
-        threshold = pkg.get("prevalence_threshold", 0.148863)
+        threshold = pkg.get("prevalence_threshold", 0.13155)
         df_batch["predicted_default_prob"] = np.round(probs, 5)
         df_batch["underwriting_decision"] = np.where(probs >= threshold, "FLAGGED_HIGH_RISK", "APPROVED")
         df_batch.to_csv(out_path, index=False)
@@ -406,7 +407,7 @@ def parse_cli_args():
 
         args = parser.parse_args()
         pkg = load_model_package(args.bin)
-        threshold = pkg.get("prevalence_threshold", 0.148863)
+        threshold = pkg.get("prevalence_threshold", 0.13155)
 
         if args.csv:
             df_b = pd.read_csv(args.csv)

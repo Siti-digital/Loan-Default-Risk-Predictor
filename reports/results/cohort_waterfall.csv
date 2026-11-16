@@ -1,0 +1,8 @@
+step,loans_remaining,removed
+"Raw LendingClub loans, 2007-2018",2260701,0
+Drop rows without an issue date,2260668,33
+Keep 36-month loans,1609754,650914
+Keep vintages issued up to Dec 2015 (matured),621169,988585
+Keep resolved outcomes (drop Current / Late / Grace),621022,147
+Drop exact duplicate rows,621021,1
+Join lagged macro data (Jun-Aug 2007 lack 8 months of macro history),620860,161

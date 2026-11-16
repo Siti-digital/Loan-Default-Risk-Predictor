@@ -3,309 +3,730 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loan Default Risk Predictor | ES 335 Credit Risk</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Macro Stress Testing on Loan Defaults</title>
+  <meta name="description" content="ES 335 project: do national macroeconomic conditions at loan origination improve default prediction beyond borrower data? Out-of-time evaluation on 620,860 LendingClub loans.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23533afd'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/site.css?v=7">
+  <script>
+    try { var t = localStorage.getItem('site-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
 </head>
 <body>
-  <header>
-    <div class="container header-container">
+<a class="sr-only" href="#question">Skip to content</a>
+
+<nav class="nav" aria-label="Sections">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-6 4 3 7-8"/></svg></span>
+      Macro Stress Testing
+    </a>
+    <div class="nav-links" id="nav-links">
+      <a href="#question">Question</a>
+      <a href="#data">Data</a>
+      <a href="#preprocessing">Preprocessing</a>
+      <a href="#models">Models</a>
+      <a href="#evaluation">Evaluation</a>
+      <a href="#results">Results</a>
+      <a href="#errors">Errors</a>
+      <a href="#limitations">Limitations</a>
+      <a href="#explorer">Explorer</a>
+      <a href="#reproduce">Reproduce</a>
+    </div>
+    <div class="nav-tools">
+      <a class="icon-btn" href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor" title="GitHub repository" aria-label="GitHub repository">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="eyebrow">ES 335 Machine Learning · IIT Gandhinagar</span>
+    <h1>Does the economy at origination predict who defaults?</h1>
+    <p class="lede">
+      We test whether national unemployment, its recent change and inflation, all known when a loan is issued, improve default prediction
+      beyond the borrower's own application. On <strong data-k="test_loans">283,026</strong> loans from 2015 that the models never saw,
+      <strong>they do not</strong>: borrower data carry the signal, and adding macro data leaves ranking unchanged and pushes the predicted
+      default rate further from the real one.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#results">See the evidence
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a class="btn btn-ghost" href="#explorer">Try the explorer</a>
+      <a class="btn btn-ghost" href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor">Code &amp; notebook</a>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="v" data-k="cohort_loans">620,860</div><div class="l">matured 36-month loans, 2007–2015</div></div>
+      <div class="kpi"><div class="v" style="font-size:clamp(1.05rem, 0.85rem + 0.8vw, 1.45rem);white-space:nowrap"><span data-k="b_pr4">0.2211</span> → <span data-k="c_pr4">0.2207</span></div><div class="l">PR-AUC on 2015: borrower-only → + macro (no-skill = <span data-k="a_pr">0.149</span>)</div></div>
+      <div class="kpi"><div class="v" data-k="d_pr_cb">−0.0004</div><div class="l">PR-AUC change from adding macro; 95% month-block interval <span data-k="ci_pr_text">−0.0009 to +0.0001</span></div></div>
+      <div class="kpi"><div class="v" data-k="l_pr">0.27</div><div class="l">PR-AUC of the lender-pricing benchmark: the information we lack is borrower-level</div></div>
+    </div>
+  </div>
+</header>
+
+<noscript><div class="wrap"><p class="noscript">Charts and the explorer need JavaScript. All figures are also listed in the gallery at the end of the page and in the repository under <code>reports/figures</code>.</p></div></noscript>
+
+<main>
+<!-- ============================ 01 QUESTION ============================ -->
+<section class="block" id="question">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">01 · QUESTION</div>
       <div>
-        <h1>Loan Default Risk Predictor</h1>
-        <p class="subtitle">ES 335 Machine Learning | IIT Gandhinagar | Quantitative Risk & Analytics</p>
+        <h2>What we are predicting, for whom, and when</h2>
+        <p class="intro">Banks stress-test loan books against recessions, which assumes the economy affects default. We ask a narrower, testable
+          question: at the moment a loan is issued, does knowing the state of the economy help predict whether <em>that</em> loan will default,
+          once we already know the borrower?</p>
       </div>
     </div>
-  </header>
-
-  <main class="container">
-    <!-- Interactive Sensitivity & Risk Explorer (Moved to the Top) -->
-    <section class="card interactive-card">
-      <h2>Predictor Model</h2>
-      <p style="margin-bottom: 1.5rem; color: #475569;">
-        Adjust macroeconomic conditions and borrower application details below, then click <strong>Predict Default Risk</strong>:
-      </p>
-
-      <div class="simulator-layout">
-        <!-- Controls -->
-        <div class="controls-panel">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
-            <h3 style="margin: 0;">Origination Macroeconomic Levers</h3>
-            <span style="font-size: 0.75rem; color: #64748b;">Extended Stress-Testing Range</span>
-          </div>
-
-          <!-- Quick Stress Scenario Presets -->
-          <div style="margin-bottom: 1.25rem;">
-            <small style="color: #475569; font-weight: 600; display: block; margin-bottom: 0.4rem;">Quick Stress Presets:</small>
-            <div class="preset-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button type="button" class="preset-btn" data-unemp="5.0" data-cpi="2.0" data-chg="0.0">Calm Baseline</button>
-              <button type="button" class="preset-btn" data-unemp="6.8" data-cpi="3.2" data-chg="0.8">Mild Slowdown</button>
-              <button type="button" class="preset-btn" data-unemp="9.8" data-cpi="4.5" data-chg="2.0">Acute 2008 Recession Shock</button>
-            </div>
-          </div>
-
-          <div class="control-group">
-            <div class="control-header">
-              <label for="unemployment-slider">National Unemployment Rate (UNRATE):</label>
-              <span id="unemployment-val" class="slider-val">5.0%</span>
-            </div>
-            <input type="range" id="unemployment-slider" min="3.0" max="20.0" step="0.1" value="5.0">
-            <small class="hint">Range: 3.0% to 20.0% (Severe Economic Stress Bound)</small>
-          </div>
-
-          <div class="control-group">
-            <div class="control-header">
-              <label for="cpi-slider">CPI Year-over-Year Inflation:</label>
-              <span id="cpi-val" class="slider-val">2.0%</span>
-            </div>
-            <input type="range" id="cpi-slider" min="-2.0" max="15.0" step="0.1" value="2.0">
-            <small class="hint">Range: -2.0% to 15.0% (High Inflation Stress Bound)</small>
-          </div>
-
-          <div class="control-group">
-            <div class="control-header">
-              <label for="unemp-change-slider">6-Month Change in Unemployment (Shock Velocity):</label>
-              <span id="unemp-change-val" class="slider-val">0.0%</span>
-            </div>
-            <input type="range" id="unemp-change-slider" min="-1.5" max="2.5" step="0.1" value="0.0">
-            <small class="hint">Range: -1.5% to +2.5% (Acute Shock)</small>
-          </div>
-
-          <h3 style="margin-top: 1.5rem;">Representative Borrower Application Profile</h3>
-          <div class="borrower-inputs">
-            <div>
-              <label for="fico-input">FICO Score:</label>
-              <input type="number" id="fico-input" value="690" min="660" max="850">
-            </div>
-            <div>
-              <label for="dti-input">DTI (%):</label>
-              <input type="number" id="dti-input" value="18" min="0" max="40">
-            </div>
-            <div>
-              <label for="income-input">Annual Income ($):</label>
-              <input type="number" id="income-input" value="70000" min="20000" max="300000" step="5000">
-            </div>
-          </div>
-
-          <!-- Predict Button -->
-          <button id="predict-btn" class="predict-button" type="button">
-            Predict Default Risk
-          </button>
-        </div>
-
-        <!-- Output Display -->
-        <div class="output-panel">
-          <h3>Model-Based Sensitivity Estimate</h3>
-          
-          <!-- Speedometer Gauge -->
-          <div class="speedometer-container">
-            <svg class="speedometer-svg" viewBox="0 0 240 148">
-              <defs>
-                <filter id="needle-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity="0.35" />
-                </filter>
-              </defs>
-
-              <!-- Colored Arc Zones: Green -> Blue -> Orange -> Red -->
-              <!-- Green Zone: Low Risk (0% to 10% PD) -->
-              <path d="M 35 115 A 85 85 0 0 1 59.9 54.9" fill="none" stroke="#10b981" stroke-width="14" stroke-linecap="round" />
-              <!-- Blue Zone: Moderate Risk (10% to 16% PD) -->
-              <path d="M 59.9 54.9 A 85 85 0 0 1 120 30" fill="none" stroke="#3b82f6" stroke-width="14" />
-              <!-- Orange Zone: Elevated Risk (16% to 22% PD) -->
-              <path d="M 120 30 A 85 85 0 0 1 180.1 54.9" fill="none" stroke="#f59e0b" stroke-width="14" />
-              <!-- Red Zone: Severe Risk (22%+ PD) -->
-              <path d="M 180.1 54.9 A 85 85 0 0 1 205 115" fill="none" stroke="#ef4444" stroke-width="14" stroke-linecap="round" />
-
-              <!-- Speedometer Pointer Needle -->
-              <g id="speedometer-needle" style="transform-origin: 120px 115px; transform: rotate(-15deg); transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);">
-                <polygon points="116,115 120,24 124,115" fill="#1e293b" filter="url(#needle-shadow)" />
-                <polygon id="needle-tip" points="118,32 120,24 122,32" fill="#3b82f6" />
-                <circle cx="120" cy="115" r="9" fill="#0f172a" />
-                <circle cx="120" cy="115" r="4" fill="#ffffff" />
-              </g>
-
-              <!-- Zone Acronym Markers -->
-              <text x="32" y="134" font-size="9" fill="#10b981" font-weight="700">LOW</text>
-              <text x="75" y="44" font-size="9" fill="#3b82f6" font-weight="700">MOD</text>
-              <text x="145" y="44" font-size="9" fill="#f59e0b" font-weight="700">ELEV</text>
-              <text x="188" y="134" font-size="9" fill="#ef4444" font-weight="700">SEV</text>
-            </svg>
-
-            <!-- Digital Percentage Readout -->
-            <div class="speedometer-readout">
-              <span id="pd-percentage">14.2%</span>
-              <span class="gauge-label">Probability of Default</span>
-            </div>
-          </div>
-
-          <div class="risk-badge moderate" id="risk-status">Moderate Risk</div>
-
-          <div class="scenario-summary">
-            <h4>Macro Sensitivity Delta</h4>
-            <p id="delta-summary">Default odds changed by <strong>+0.0%</strong> relative to benign baseline.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Model Comparison Architecture & Holdout Benchmark Scorecard -->
-    <section class="card architecture-card">
-      <h2>Experimental Model Architecture</h2>
-      <p>Models are strictly separated to isolate the marginal predictive power of macroeconomic conditions at origination:</p>
-      <div class="model-cards-grid">
-        <div class="model-card">
-          <span class="model-tag">Model A</span>
-          <h4>Historical Baseline</h4>
-          <p>Predicts empirical training base-rate default probability (uninformed baseline).</p>
-        </div>
-        <div class="model-card">
-          <span class="model-tag">Model B</span>
-          <h4>Borrower-Only Logit</h4>
-          <p>Application features at origination. Excludes lender pricing (<code>int_rate</code>, <code>installment</code>, <code>grade</code>).</p>
-        </div>
-        <div class="model-card model-card-chosen" style="background-color: #f0fdf4; border: 2px solid #22c55e; position: relative;">
-          <span style="position: absolute; top: -10px; right: 12px; background: #16a34a; color: #ffffff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em;">Chosen Model</span>
-          <span class="model-tag" style="background-color: #dcfce7; color: #15803d;">Model C</span>
-          <h4 style="color: #14532d;">Borrower + Macro Logit</h4>
-          <p>Borrower attributes plus conservative 2-month lagged stationary macro series (UNRATE, change, CPI). Powers the live interactive predictor above.</p>
-        </div>
-        <div class="model-card">
-          <span class="model-tag">Model D</span>
-          <h4>Borrower + Macro LightGBM</h4>
-          <p>Gradient boosted trees on Model C features to capture potential non-linearities. Evaluated separately in Python.</p>
-        </div>
-      </div>
-
-      <!-- 2015 Holdout Benchmark Scorecard Table -->
-      <div class="benchmark-table-wrapper" style="margin-top: 2rem; overflow-x: auto;">
-        <h3>2015 Holdout Test Scorecard (Untouched Out-of-Time Evaluation)</h3>
-        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem;">
-          Trained chronologically on 2007–2014 loans; evaluated on 283,026 loans from the 2015 holdout vintage (Empirical Default Rate = 14.89%).
-        </p>
-        <table class="benchmark-table" id="benchmark-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-          <thead>
-            <tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;">
-              <th style="padding: 0.6rem 0.75rem;">Model</th>
-              <th style="padding: 0.6rem 0.75rem;">Weighting</th>
-              <th style="padding: 0.6rem 0.75rem;">PR-AUC</th>
-              <th style="padding: 0.6rem 0.75rem;">ROC-AUC</th>
-              <th style="padding: 0.6rem 0.75rem;">Brier Score</th>
-              <th style="padding: 0.6rem 0.75rem;">Mean Pred PD</th>
-              <th style="padding: 0.6rem 0.75rem;">Actual DR</th>
-            </tr>
-          </thead>
-          <tbody id="benchmark-table-body">
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_A</td>
-              <td style="padding: 0.5rem 0.75rem; color: #64748b;">baseline</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1489</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.5000</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1270</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.15%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_B</td>
-              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2224</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6380</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1231</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.86%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0; background-color: #f0fdf4;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 700; color: #15803d;">MODEL_C <span style="font-size: 0.7rem; background: #22c55e; color: #fff; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">CHOSEN</span></td>
-              <td style="padding: 0.5rem 0.75rem; color: #166534; font-weight: 500;">unweighted</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.2218</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.6375</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">0.1234</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">13.11%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600;">14.89%</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_D_BASE</td>
-              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2262</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6457</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1227</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.76%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_D</td>
-              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2240</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6421</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1228</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">15.69%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">LENDER_BENCHMARK</td>
-              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2663</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6863</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1209</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">12.08%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 0.5rem 0.75rem; font-weight: 600;">MODEL_C_ABLATION</td>
-              <td style="padding: 0.5rem 0.75rem; color: #64748b;">unweighted</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.2214</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.6369</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">0.1233</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">13.37%</td>
-              <td style="padding: 0.5rem 0.75rem; font-family: monospace;">14.89%</td>
-            </tr>
-          </tbody>
+    <div class="grid-2">
+      <div class="card">
+        <table class="def-table">
+          <tr><th>Question</th><td>Do macroeconomic conditions available at origination improve default prediction beyond borrower application data?</td></tr>
+          <tr><th>One row</th><td>One 36-month LendingClub personal loan, described as it looked on its issue month.</td></tr>
+          <tr><th>Target</th><td><code>default = 1</code> if the loan ended <em>Charged Off / Default</em>; <code>0</code> if <em>Fully Paid</em>. Loans still running are excluded.</td></tr>
+          <tr><th>Prediction time</th><td>The issue month. Inputs are the application fields plus macro data published <strong>before</strong> that month (2-month lag).</td></tr>
+          <tr><th>Output</th><td>A probability of default (PD) over the loan's life, not a yes/no label.</td></tr>
         </table>
       </div>
-    </section>
-
-    <!-- Creator & Contact Details Section -->
-    <section class="card creator-card">
-      <h2>Project Creator & Model Developer</h2>
-      <div class="creator-container">
-        <div class="creator-profile">
-          <div class="creator-avatar">KK</div>
-          <div class="creator-details">
-            <h3 class="creator-name">Kunal Kashyap</h3>
-            <p class="creator-title">Website & Machine Learning Model Creator</p>
-            <p class="creator-institution">ES 335: Machine Learning &bull; Indian Institute of Technology Gandhinagar</p>
-          </div>
+      <div class="stack">
+        <div class="callout answer">
+          <h4>Short answer</h4>
+          <p>No measurable improvement. Adding three macro features changes 2015 PR-AUC by <b data-k="d_pr_cb">−0.0005</b> and ROC-AUC by
+            <b data-k="d_roc_cb">−0.0005</b>. Across 2013, 2014 and 2015 the macro terms shift the predicted default rate in the wrong direction
+            (correlation with the borrower model's miss: <b data-k="corr">−0.6</b>).</p>
         </div>
-
-        <div class="creator-contact-grid">
-          <div class="contact-item">
-            <span class="contact-label">Name</span>
-            <span class="contact-value">Kunal Kashyap</span>
-          </div>
-
-          <div class="contact-item">
-            <span class="contact-label">Email</span>
-            <a href="mailto:kunalkashyap2603@gmail.com" class="contact-value contact-link">kunalkashyap2603@gmail.com</a>
-          </div>
-
-          <div class="contact-item">
-            <span class="contact-label">Contact Number</span>
-            <a href="tel:+917577815607" class="contact-value contact-link">+91 7577815607</a>
-          </div>
-
-          <div class="contact-item contact-address">
-            <span class="contact-label">Address</span>
-            <span class="contact-value">IIT Gandhinagar, Palaj, Gujarat, PIN 382355</span>
-          </div>
+        <div class="callout">
+          <h4>What this project does not claim</h4>
+          <p>It is a predictive comparison on US data from 2007–2015, one lender, and loans that lender chose to approve. Coefficients describe
+            associations, not causal effects of the economy on any borrower. It says nothing about how a loan behaves if the economy changes
+            <em>after</em> issue; that needs a survival model with time-varying covariates.</p>
         </div>
       </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container footer-content">
-      <p>ES 335 Machine Learning &bull; IIT Gandhinagar &bull; Macroeconomic Stress Testing on Retail Loan Defaults</p>
-      <p style="margin-top: 0.4rem; font-size: 0.82rem; color: #94a3b8;">Created & Developed by Kunal Kashyap &bull; IIT Gandhinagar</p>
     </div>
-  </footer>
+  </div>
+</section>
 
-  <script src="script.js"></script>
+<!-- ============================ 02 DATA ============================ -->
+<section class="block alt" id="data">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">02 · DATA</div>
+      <div>
+        <h2>Two public sources, one point-in-time join</h2>
+        <p class="intro">Loan-level records come from LendingClub; monthly macro series come from the Federal Reserve Bank of St. Louis (FRED).
+          The raw files are not stored in the repository; the README explains how to download them.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>LendingClub accepted loans</h3>
+        <p class="sub">Kaggle · <code>wordsforthewise/lending-club</code> · 2007–2018Q4</p>
+        <ul class="clean">
+          <li><strong data-k="raw_loans">2,260,701</strong> loans × 151 columns (~1.6 GB CSV). We keep 15 application-time columns.</li>
+          <li>Access: free Kaggle account. Data are anonymised but still personal financial records, so they are not redistributed.</li>
+          <li>Only <em>approved</em> loans are observed. Rejected applicants are missing, which limits what any model here can say about the full population.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>FRED monthly series</h3>
+        <p class="sub">API key in a git-ignored <code>.env</code> · 2007–2018</p>
+        <ul class="clean">
+          <li><code>UNRATE</code>: civilian unemployment rate. We also derive <code>UNRATE_change_6m</code>, its change over 6 months.</li>
+          <li><code>CPIAUCSL</code>: consumer price index, turned into year-over-year inflation <code>CPI_YoY_Inflation</code> (the raw index trends upward).</li>
+          <li><code>FEDFUNDS</code>, <code>UMCSENT</code>, <code>DGS10</code> are downloaded but not used in the models.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card">
+        <h3>Key variables</h3>
+        <div class="table-wrap" style="border:none">
+          <table class="data">
+            <thead><tr><th>Group</th><th>Variables</th></tr></thead>
+            <tbody>
+              <tr><td><span class="swatch" style="background:var(--s-b)"></span>Borrower</td><td class="wrap-cell"><code>fico_avg</code>, <code>dti</code>, <code>annual_inc</code>, <code>revol_util</code>, <code>open_acc</code>, <code>pub_rec</code>, <code>mort_acc</code>, <code>loan_amnt</code>, <code>home_ownership</code></td></tr>
+              <tr><td><span class="swatch" style="background:var(--s-c)"></span>Macro (lagged)</td><td class="wrap-cell"><code>UNRATE</code>, <code>UNRATE_change_6m</code>, <code>CPI_YoY_Inflation</code></td></tr>
+              <tr><td><span class="swatch" style="background:var(--s-l)"></span>Lender pricing</td><td class="wrap-cell"><code>int_rate</code>, <code>installment</code>: benchmark only, because they encode LendingClub's own risk model</td></tr>
+              <tr><td><span class="swatch" style="background:var(--muted)"></span>Excluded</td><td class="wrap-cell">Anything recorded after issue: payments, recoveries, last payment date, settlement flags</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>From 2.26M rows to the analytical cohort</h3>
+        <div id="waterfall"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px">
+      <div class="controls-row">
+        <div>
+          <h3>Quality issue 1: young vintages are right-censored</h3>
+          <p class="sub" style="margin:4px 0 0">36-month loans by issue year. Once loans are still running, the resolved ones are mostly early failures, so the observed default rate is inflated.</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div><div class="legend"><span><i class="box" style="background:var(--s-c)"></i>Loans still unresolved, %</span></div><div class="chart-box h-sm"><canvas id="ch-censor"></canvas></div></div>
+        <div><div class="legend"><span><i class="box" style="background:var(--s-b)"></i>Default rate among resolved loans, %</span></div><div class="chart-box h-sm"><canvas id="ch-censor-dr"></canvas></div></div>
+      </div>
+      <p class="chart-note">Decision: keep vintages up to Dec 2015 (0.05% unresolved). 2016–2018 are excluded rather than given biased labels.</p>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card">
+        <h3>Quality issues 2–5</h3>
+        <div class="table-wrap" style="border:none">
+          <table class="data fit">
+            <thead><tr><th>Issue</th><th class="num">Size</th><th>Handling</th></tr></thead>
+            <tbody id="quality-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="controls-row">
+          <h3 style="margin:0">Borrower fields separate risk</h3>
+          <div class="seg" role="group" aria-label="Borrower feature" id="sig-seg"></div>
+        </div>
+        <p class="sub">Default rate by band, training years 2007–2014 only. Dashed line = training base rate.</p>
+        <div class="chart-box h-sm"><canvas id="ch-signal"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px">
+      <h3>Default rate and macro inputs by issue month</h3>
+      <p class="sub">Each panel has its own scale; shading marks training, the two validation years and the 2015 test year. Hover for values.</p>
+      <div class="legend">
+        <span><i class="box" style="background:color-mix(in srgb, var(--s-b) 22%, transparent)"></i>train only</span>
+        <span><i class="box" style="background:color-mix(in srgb, var(--accent) 30%, transparent)"></i>CV validation years</span>
+        <span><i class="box" style="background:color-mix(in srgb, var(--s-c) 32%, transparent)"></i>2015 test</span>
+      </div>
+      <div class="chart-box h-md"><canvas id="ch-month-dr"></canvas></div>
+      <div class="grid-3" style="margin-top:8px">
+        <div><h4 style="font-size:.82rem">Unemployment rate, % (lagged 2 months)</h4><div class="chart-box h-xs"><canvas id="ch-month-u"></canvas></div></div>
+        <div><h4 style="font-size:.82rem">6-month change in unemployment, pp</h4><div class="chart-box h-xs"><canvas id="ch-month-du"></canvas></div></div>
+        <div><h4 style="font-size:.82rem">CPI inflation, year over year, %</h4><div class="chart-box h-xs"><canvas id="ch-month-cpi"></canvas></div></div>
+      </div>
+      <p class="chart-note">Before late 2009 each month has only a few hundred loans, so those default rates are noisy. From 2013 there are roughly 8,000–24,000 loans a month, but macro
+        conditions barely move: unemployment falls smoothly and inflation sits near 0–2%. That leaves little macro variation for a model to learn from.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 03 PREPROCESSING ============================ -->
+<section class="block" id="preprocessing">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">03 · PREPROCESSING</div>
+      <div>
+        <h2>Every choice uses only information available at issue</h2>
+        <p class="intro">Three kinds of leakage are possible in this problem: future outcomes in the label, future macro data in the features, and
+          test-set statistics in the scaling. Each has a specific guard.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <ol class="steps">
+          <li><strong>Resolved, matured loans only</strong>Keep 36-month loans issued up to Dec 2015 with a final status. Loans still running are excluded instead of being labelled "good".</li>
+          <li><strong>Macro transformations before lagging</strong>Inflation (12-month % change of CPI) and the 6-month unemployment change are computed on the raw monthly series.</li>
+          <li><strong>2-month publication lag</strong>Every macro column is shifted by two months, so a June loan sees April data. US unemployment and CPI for a month are released in the first half of the next month. An assertion checks every row.</li>
+          <li><strong>One FICO feature</strong><code>fico_avg</code> replaces the low/high bounds, which always differ by 4 points and are perfectly collinear.</li>
+          <li><strong>Log income</strong><code>annual_inc</code> is right-skewed (skew <span data-k="skew_raw">29</span> raw vs <span data-k="skew_log">0.3</span> after <code>log1p</code>). On the CV folds the log version raised PR-AUC by <span data-k="log_gain">+0.002</span>, so we kept it. This was decided before the test set was used.</li>
+          <li><strong>Impute, scale, encode, all fitted on training rows</strong>Median imputation (mainly <code>mort_acc</code>, not recorded before 2012), standard scaling, one-hot <code>home_ownership</code>. Each CV fold refits these on its own training window, and the final model refits on 2007–2014.</li>
+        </ol>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>Point-in-time alignment</h3>
+          <p class="sub">What a loan issued in a given month is allowed to see</p>
+          <div class="table-wrap" style="border:none">
+            <table class="data">
+              <thead><tr><th>Loan issued</th><th>Macro month used</th><th>Published</th></tr></thead>
+              <tbody>
+                <tr><td>Jun 2015</td><td>Apr 2015</td><td>early May 2015</td></tr>
+                <tr><td>Jan 2015</td><td>Nov 2014</td><td>early Dec 2014</td></tr>
+                <tr><td>Sep 2007</td><td>Jul 2007</td><td>Aug 2007 (first usable month)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="chart-note">The 6-month change also needs six earlier months, so Jun–Aug 2007 loans (161) are dropped.</p>
+        </div>
+        <div class="card">
+          <h3>Leakage checks run in the notebook</h3>
+          <ul class="clean">
+            <li>No post-origination columns in any feature set.</li>
+            <li>Target is strictly 0/1 with no missing values; no duplicate rows.</li>
+            <li>Every loan's macro reference month is at least 2 months before its issue month.</li>
+            <li>Train ends Dec 2014, test begins Jan 2015.</li>
+            <li>Scalers and imputers are fitted on training rows only; test rows are only transformed.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 04 MODELS ============================ -->
+<section class="block alt" id="models">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">04 · BASELINE &amp; MODELS</div>
+      <div>
+        <h2>One controlled comparison, plus reference points</h2>
+        <p class="intro">The question is answered by <strong>Model B vs Model C</strong>: same algorithm, same borrower features, the only difference is the
+          macro block. The other models tell us whether the answer depends on the algorithm and how good "good" is here.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Model</th><th>Inputs</th><th>Algorithm</th><th class="wrap-cell">Why it is here</th><th>Selected setting</th></tr></thead>
+        <tbody>
+          <tr><td><span class="swatch" style="background:var(--s-a)"></span><strong>A</strong> · baseline</td><td>none</td><td>training default rate</td><td class="wrap-cell">The "know nothing" reference: every loan gets <span data-k="train_dr">13.2%</span>. Its PR-AUC equals the test default rate.</td><td>–</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s-b)"></span><strong>B</strong> · borrower</td><td>borrower</td><td>logistic regression</td><td class="wrap-cell">Meaningful baseline: a standard application scorecard.</td><td class="mono" data-k="sel_b">C=0.1</td></tr>
+          <tr class="hl"><td><span class="swatch" style="background:var(--s-c)"></span><strong>C</strong> · borrower + macro</td><td>borrower + macro</td><td>logistic regression</td><td class="wrap-cell">The test: does the macro block add anything over B?</td><td class="mono" data-k="sel_c">C=0.1</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s-dbase)"></span><strong>D-base</strong></td><td>borrower</td><td>LightGBM</td><td class="wrap-cell">Non-linear version of B.</td><td class="mono" data-k="sel_dbase">–</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s-d)"></span><strong>D</strong></td><td>borrower + macro</td><td>LightGBM</td><td class="wrap-cell">Checks whether macro effects only appear through thresholds or interactions.</td><td class="mono" data-k="sel_d">–</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s-l)"></span><strong>Lender</strong></td><td>borrower + <code>int_rate</code>, <code>installment</code></td><td>logistic regression</td><td class="wrap-cell">Upper reference. Interest rate is set by LendingClub's own model, so it smuggles in information we do not have.</td><td class="mono" data-k="sel_l">C=0.1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid-3" style="margin-top:24px">
+      <div class="card">
+        <h3>Why logistic regression</h3>
+        <p>The objective is log-loss, so the outputs are probabilities on the real default-rate scale. Coefficients are readable as odds ratios, and the
+          model is a closed formula that runs in the browser explorer below. Assumptions: log-odds are additive in the features, and rows are independent.
+          The second assumption fails for macro features, so the statistical model uses standard errors clustered by month.</p>
+      </div>
+      <div class="card">
+        <h3>Why also LightGBM</h3>
+        <p>A linear model could miss a macro effect that only matters past a threshold or for certain borrowers. Gradient-boosted trees can find those
+          shapes without us specifying them, so D vs D-base repeats the B vs C test without the linearity assumption.</p>
+      </div>
+      <div class="card">
+        <h3>Why no class re-weighting</h3>
+        <p>Defaults are about 13–15% of loans. <code>class_weight="balanced"</code> would push predicted PDs toward 50% and wreck calibration. We
+          checked: it lifts the mean 2015 PD to <b data-k="bal_mean">48%</b> and nearly doubles the Brier score (<b data-k="bal_brier">0.236</b>) with no ranking gain.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:24px">
+      <div class="controls-row">
+        <div><h3 style="margin:0">Tuning on the validation folds only</h3>
+          <p class="sub" style="margin:4px 0 0">Mean PR-AUC over the 2013 and 2014 validation years for each candidate. The highest is selected; 2015 is not used.</p></div>
+        <div class="seg" role="group" aria-label="Model family" id="tune-seg"></div>
+      </div>
+      <div class="table-wrap" style="border:none"><table class="data"><thead><tr><th>Model</th><th>Setting</th><th class="num">CV PR-AUC</th><th class="num">CV ROC-AUC</th><th class="num">CV Brier</th><th></th></tr></thead><tbody id="tune-body"></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 05 EVALUATION ============================ -->
+<section class="block" id="evaluation">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">05 · EVALUATION DESIGN</div>
+      <div>
+        <h2>Split by time, decide on validation years, test once</h2>
+        <p class="intro">The split was fixed before any model was compared. Random K-fold would put loans from the same month, which share
+          identical macro values, on both sides of the split.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Chronological split</h3>
+        <p class="sub">Issue year</p>
+        <div class="split-diagram" aria-label="Train, validation and test windows by year">
+          <div class="yr">07</div><div class="yr">08</div><div class="yr">09</div><div class="yr">10</div><div class="yr">11</div><div class="yr">12</div><div class="yr">13</div><div class="yr">14</div><div class="yr">15</div>
+          <div class="lane-label">CV fold 1</div>
+          <div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr">fit</div><div class="cell va">val</div><div class="cell no"></div><div class="cell no"></div>
+          <div class="lane-label">CV fold 2</div>
+          <div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr">fit</div><div class="cell va">val</div><div class="cell no"></div>
+          <div class="lane-label">Final model</div>
+          <div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr"></div><div class="cell tr">fit</div><div class="cell te">test</div>
+        </div>
+        <ul class="clean" style="margin-top:18px">
+          <li><strong>Train</strong> 2007–2014: <span data-k="train_loans">337,834</span> loans, default rate <span data-k="train_dr">13.2%</span>, <span data-k="train_months">88</span> issue months.</li>
+          <li><strong>Validation</strong> 2013 and 2014 (expanding windows): used for every choice: income transform, regularisation, tree settings.</li>
+          <li><strong>Test</strong> 2015: <span data-k="test_loans">283,026</span> loans, default rate <span data-k="test_dr">14.9%</span>. Scored once, at the end.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Metrics and why</h3>
+        <div class="table-wrap" style="border:none">
+          <table class="data">
+            <tbody>
+              <tr><td><strong>PR-AUC</strong> <span class="tag">primary</span></td><td class="wrap-cell">Area under precision–recall. Focuses on the default class; a no-skill model scores the default rate (~0.15), so lift is easy to read.</td></tr>
+              <tr><td><strong>ROC-AUC</strong></td><td class="wrap-cell">Chance a random defaulter is ranked above a random payer. Insensitive to the base rate, so it is comparable across years.</td></tr>
+              <tr><td><strong>Brier score</strong></td><td class="wrap-cell">Mean squared error of the probabilities. Rewards both ranking and correct level.</td></tr>
+              <tr><td><strong>Mean PD vs actual</strong></td><td class="wrap-cell">Calibration-in-the-large: is the predicted portfolio default rate right? This is what loss provisions depend on.</td></tr>
+              <tr><td><strong>Confusion matrix</strong></td><td class="wrap-cell">At a threshold equal to the <em>training</em> default rate (<span data-k="tau">13.2%</span>), fixed in advance. Accuracy is not reported: predicting "no default" for everyone already scores 85%.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout" style="margin-top:16px">
+          <h4>Uncertainty</h4>
+          <p>The B-vs-C differences are bootstrapped by resampling whole issue months (<span data-k="boot_reps">500</span> draws), because all loans in a month
+            share one macro value. 2015 has only 12 months, so these intervals are rough. They are a sanity check, not a formal test.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 06 RESULTS ============================ -->
+<section class="block alt" id="results">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">06 · RESULTS</div>
+      <div>
+        <h2>Borrower data separate risk; macro adds nothing measurable</h2>
+        <p class="intro">All numbers below are on the 2015 test year unless marked CV. Read them against the baseline: a PR-AUC of
+          <span data-k="b_pr">0.22</span> is a <span data-k="b_lift">49%</span> lift over the no-skill <span data-k="a_pr">0.149</span>, which is typical for
+          application-only consumer credit models.</p>
+      </div>
+    </div>
+
+    <div class="card elev">
+      <div class="controls-row">
+        <h3 style="margin:0">Model comparison</h3>
+        <div class="seg" role="group" aria-label="Metric" id="metric-seg">
+          <button type="button" data-m="PR-AUC" aria-pressed="true">PR-AUC</button>
+          <button type="button" data-m="ROC-AUC" aria-pressed="false">ROC-AUC</button>
+          <button type="button" data-m="Brier_Score" aria-pressed="false">Brier</button>
+          <button type="button" data-m="Mean_Pred_PD" aria-pressed="false">Mean PD</button>
+        </div>
+      </div>
+      <div class="grid-2" style="align-items:start">
+        <div><div class="chart-box h-md"><canvas id="ch-metric"></canvas></div><p class="chart-note" id="metric-note"></p></div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Model</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th><th class="num">Mean PD</th><th class="num">CV PR-AUC</th></tr></thead>
+            <tbody id="holdout-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card">
+        <h3>Is the B → C difference real?</h3>
+        <p class="sub">Model C minus Model B on 2015, with 95% month-block bootstrap intervals</p>
+        <div id="ci-plot"></div>
+        <p class="chart-note" id="ci-note"></p>
+      </div>
+      <div class="card">
+        <div class="controls-row">
+          <h3 style="margin:0">Curves</h3>
+          <div class="seg" role="group" aria-label="Curve type" id="curve-seg">
+            <button type="button" data-c="pr" aria-pressed="true">Precision–recall</button>
+            <button type="button" data-c="roc" aria-pressed="false">ROC</button>
+            <button type="button" data-c="cal" aria-pressed="false">Calibration</button>
+          </div>
+        </div>
+        <div class="legend" id="curve-legend"></div>
+        <div class="chart-box h-md"><canvas id="ch-curves"></canvas></div>
+        <p class="chart-note" id="curve-note">B and C lie on top of each other. The lender benchmark sits clearly above both.</p>
+      </div>
+    </div>
+
+    <div class="card elev" style="margin-top:24px" id="threshold">
+      <div class="controls-row">
+        <div>
+          <h3 style="margin:0">Interactive: what the PD means at a decision threshold</h3>
+          <p class="sub" style="margin:4px 0 0">Choose a cut-off. Loans with predicted PD above it are flagged. Counts are for the 283,026 loans issued in 2015.</p>
+        </div>
+        <div class="seg" role="group" aria-label="Model" id="thr-model"></div>
+      </div>
+      <div class="grid-2" style="align-items:start">
+        <div>
+          <div class="range-row">
+            <div class="top"><label for="thr">Decision threshold (flag if PD ≥)</label><output id="thr-out">13.0%</output></div>
+            <input type="range" id="thr" min="0" max="1" step="1" value="0">
+            <div class="hint">Starts at the grid point closest to the training default rate (<span data-k="tau">13.2%</span>), the threshold fixed before testing.</div>
+          </div>
+          <div class="cm" id="cm" aria-live="polite"></div>
+          <div class="stat-row" id="thr-stats"></div>
+        </div>
+        <div>
+          <div class="legend"><span><i style="background:var(--s-b)"></i>Precision</span><span><i style="background:var(--s-c)"></i>Recall</span><span><i style="background:var(--muted)"></i>Share of loans flagged</span></div>
+          <div class="chart-box h-md"><canvas id="ch-thr"></canvas></div>
+          <p class="chart-note">Lower thresholds catch more defaults but flag many loans that would have been repaid. Switch between B and C: the trade-off is almost identical.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card">
+        <h3>What the statistical model says</h3>
+        <p class="sub">Model C refitted with statsmodels; odds ratio per 1 SD with 95% intervals, standard errors clustered by issue month (<span data-k="train_months">88</span> clusters)</p>
+        <div class="legend"><span><i class="box" style="background:var(--s-b)"></i>Borrower terms</span><span><i class="box" style="background:var(--s-c)"></i>Macro terms</span></div>
+        <div class="chart-box h-lg"><canvas id="ch-or"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Reading the coefficients</h3>
+        <ul class="clean">
+          <li><strong>FICO</strong> dominates: one SD higher (~31 points) multiplies the odds of default by <b data-k="or_fico">0.67</b>.</li>
+          <li><strong>Income, DTI, loan size, mortgages</strong> follow, all in the expected direction.</li>
+          <li><strong>Macro terms are small</strong> (odds ratios <span data-k="or_macro_range">0.97–1.08</span>) even where their intervals exclude 1.</li>
+          <li><strong>Unemployment has a negative sign</strong>: loans issued when unemployment was <em>high</em> defaulted <em>less</em>. A plausible reading is that LendingClub tightened approvals during and after the recession, so the macro term partly measures who was approved, not how the economy affects a given borrower. The data cannot separate these explanations.</li>
+          <li>With 88 monthly clusters and only one macro value per month, statistical significance here does not mean predictive usefulness. The out-of-time tests above are the evidence that counts.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 07 ERRORS ============================ -->
+<section class="block" id="errors">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">07 · ERROR ANALYSIS</div>
+      <div>
+        <h2>Where and how the models are wrong</h2>
+        <p class="intro">Averages hide structure. We look at three things: the predicted default rate by issue month in every out-of-time year, the errors by
+          borrower segment, and what misclassified loans look like.</p>
+      </div>
+    </div>
+
+    <div class="card elev">
+      <h3>1 · Out-of-time calibration, month by month (2013–2015)</h3>
+      <p class="sub">2013 and 2014 come from the CV folds, 2015 from the final model. If macro data helped track the cycle, the orange line would sit closer to the actual line than the blue one.</p>
+      <div class="legend"><span><i style="background:var(--s-actual)"></i>Actual default rate</span><span><i style="background:var(--s-b)"></i>Model B</span><span><i style="background:var(--s-c)"></i>Model C (+ macro)</span></div>
+      <div class="chart-box h-md"><canvas id="ch-vintage"></canvas></div>
+      <div class="table-wrap" style="margin-top:16px">
+        <table class="data">
+          <thead><tr><th>Vintage</th><th class="num">Loans</th><th class="num">Actual</th><th class="num">Model A</th><th class="num">Model B</th><th class="num">Model C</th><th class="num">C − B shift</th></tr></thead>
+          <tbody id="vintage-body"></tbody>
+        </table>
+      </div>
+      <div class="callout warn" style="margin-top:16px">
+        <h4>Finding</h4>
+        <p id="vintage-finding">In each year the macro block moves the predicted default rate away from the realised rate.</p>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card">
+        <div class="controls-row">
+          <h3 style="margin:0">2 · Errors by segment (2015)</h3>
+          <div class="seg" role="group" aria-label="Segment" id="segment-seg"></div>
+        </div>
+        <div class="legend"><span><i class="box" style="background:var(--s-actual)"></i>Actual</span><span><i class="box" style="background:var(--s-b)"></i>Model B</span><span><i class="box" style="background:var(--s-c)"></i>Model C</span></div>
+        <div class="chart-box h-md"><canvas id="ch-seg"></canvas></div>
+        <p class="chart-note" id="seg-note"></p>
+      </div>
+      <div class="card">
+        <h3>3 · Who gets misclassified</h3>
+        <p class="sub">Model C at the training-rate threshold. <code>int_rate</code> is not a model input; it is shown to diagnose what the model misses.</p>
+        <div class="table-wrap" style="border:none">
+          <table class="data">
+            <thead><tr><th>Outcome</th><th class="num">Loans</th><th class="num">Mean PD</th><th class="num">FICO</th><th class="num">DTI</th><th class="num">Income (med.)</th><th class="num">int_rate</th></tr></thead>
+            <tbody id="err-groups"></tbody>
+          </table>
+        </div>
+        <div class="callout" style="margin-top:14px">
+          <p id="err-note">Missed defaults look like good borrowers on every field the model sees, yet the lender charged them more interest. The lender had
+            information (credit history detail, inquiries, employment) that is not in our feature set. This is the same gap the lender benchmark shows.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px">
+      <h3>Representative misclassified loans</h3>
+      <p class="sub">Four random missed defaults and four random false alarms from 2015 (random seed 42), Model C</p>
+      <div class="table-wrap" style="border:none">
+        <table class="data">
+          <thead><tr><th>Type</th><th>Issued</th><th class="num">PD (C)</th><th class="num">FICO</th><th class="num">DTI</th><th class="num">Income</th><th class="num">Loan</th><th>Home</th><th class="num">Revol. util</th><th class="num">int_rate</th></tr></thead>
+          <tbody id="err-examples"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px" id="extra">
+      <h3>Extra experiments (all scored on 2015)</h3>
+      <p class="sub">Robustness checks that could have changed the answer</p>
+      <div class="table-wrap" style="border:none">
+        <table class="data">
+          <thead><tr><th>Experiment</th><th>Model</th><th class="num">Training loans</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th><th class="num">Mean PD</th></tr></thead>
+          <tbody id="extra-body"></tbody>
+        </table>
+      </div>
+      <ul class="clean" style="margin-top:16px" id="extra-notes">
+        <li id="extra-emb"><strong>Embargoed training.</strong> On 1 Jan 2015 only loans issued up to Dec 2011 had a fully observed outcome. The main split also trains on 2012–2014 loans whose outcomes were realised during 2015–2017, so it is optimistic. Re-training on loans issued up to 2011 shows how much.</li>
+        <li><strong>Macro only.</strong> The three macro features alone barely rank loans within 2015, as expected when they take only 12 distinct values.</li>
+        <li><strong>Interactions</strong> (<code>dti × UNRATE</code>, <code>fico × UNRATE</code>) do not help either.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 08 LIMITATIONS ============================ -->
+<section class="block alt" id="limitations">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">08 · LIMITATIONS</div>
+      <div>
+        <h2>What these results cannot tell us</h2>
+        <p class="intro">The negative finding is specific to this setting. These are the main reasons it might not generalise.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="lim"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></div>
+          <div><h4>Very few independent macro observations</h4><p>Training has 88 issue months and the test year has 12. A macro effect has to be learned from 88 data points, however many loans there are.</p></div></div>
+        <div class="lim"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M12 3v18"/></svg></div>
+          <div><h4>A calm test year</h4><p>2015 unemployment moved within about one point, with no recession. Macro data might matter in a downturn, which this test cannot show.</p></div></div>
+        <div class="lim"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 16M20 4L4 20"/></svg></div>
+          <div><h4>Only approved loans</h4><p>LendingClub's approval rules changed over the cycle. The macro coefficients mix the economy with who was let in (selection bias).</p></div></div>
+      </div>
+      <div class="card">
+        <div class="lim"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M5 10l7-7 7 7"/></svg></div>
+          <div><h4>Macro at origination only</h4><p>Defaults happen up to 3 years after issue. The economy during repayment is not used, so this is not a full stress test. That would need a hazard model with time-varying covariates.</p></div></div>
+        <div class="lim"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/></svg></div>
+          <div><h4>National series, local borrowers</h4><p>State-level unemployment (via <code>addr_state</code>) would add variation within a month. It was not used here and is the most promising extension.</p></div></div>
+        <div class="lim"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <div><h4>Optimistic label timing and current-vintage data</h4><p>Training uses outcomes not yet observable in Jan 2015 (see the embargo experiment). FRED series are today's revised values, not the first releases a lender would have seen.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 09 EXPLORER ============================ -->
+<section class="block" id="explorer">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">09 · EXPLORER</div>
+      <div>
+        <h2>Move the economy, then move the borrower</h2>
+        <p class="intro">This runs the fitted Models B and C in your browser, using the exported coefficients and training scaling. Sliders are limited to the
+          range seen in training, so nothing is extrapolated. Try a recession preset, then change FICO by 40 points, and compare how far each moves the PD.</p>
+      </div>
+    </div>
+    <div class="explorer">
+      <div class="card">
+        <div class="fieldset-title">Macro conditions at issue (2-month lag)</div>
+        <div class="presets" id="presets">
+          <button class="chip" type="button" data-p="calm">Calm (2015-like)</button>
+          <button class="chip" type="button" data-p="peak">Recession peak (2010)</button>
+          <button class="chip" type="button" data-p="onset">Recession onset (2008–09)</button>
+        </div>
+        <div id="macro-inputs"></div>
+        <div class="fieldset-title" style="margin-top:12px">Borrower application</div>
+        <div class="inline-fields" id="borrower-inputs"></div>
+        <div class="range-row">
+          <div class="top"><label for="in-home">Home ownership</label></div>
+          <select id="in-home"><option>RENT</option><option selected>MORTGAGE</option><option>OWN</option></select>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card elev">
+          <div class="pd-pair">
+            <div class="pd-card"><div class="m"><span class="swatch" style="background:var(--s-b)"></span>Model B · borrower only</div><div class="v" id="pd-b">–</div><div class="bar"><span id="bar-b" style="background:var(--s-b)"></span></div></div>
+            <div class="pd-card"><div class="m"><span class="swatch" style="background:var(--s-c)"></span>Model C · + macro</div><div class="v" id="pd-c">–</div><div class="bar"><span id="bar-c" style="background:var(--s-c)"></span></div></div>
+          </div>
+          <p class="delta-line" id="pd-delta"></p>
+          <p class="chart-note" id="pd-context"></p>
+        </div>
+        <div class="card">
+          <h3>Why Model C says this</h3>
+          <p class="sub">Contribution of each input to the log-odds, relative to a typical training applicant (all features at their training means). Right = riskier.</p>
+          <div class="chart-box h-lg"><canvas id="ch-contrib"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 10 FIGURES ============================ -->
+<section class="block alt" id="figures">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">10 · FIGURES</div>
+      <div>
+        <h2>All notebook figures</h2>
+        <p class="intro">Static figures exported by the notebook (<code>reports/figures</code>). Click to enlarge.</p>
+      </div>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<!-- ============================ 11 REPRODUCE ============================ -->
+<section class="block" id="reproduce">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">11 · REPRODUCE</div>
+      <div>
+        <h2>Check it yourself</h2>
+        <p class="intro">The website summarises; the repository holds everything needed to rerun and audit the results.</p>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Run it</h3>
+        <ol class="steps">
+          <li><strong>Install</strong><code>pip install -r requirements.txt</code> (Python 3.12)</li>
+          <li><strong>Download loans</strong>Kaggle <code>wordsforthewise/lending-club</code> → <code>data/raw/microdata.csv</code>, then <code>python src/microdatafilterscript.py</code></li>
+          <li><strong>Download macro data</strong>Put <code>FRED_API_KEY</code> in <code>.env</code>, then <code>python src/build_macrodata.py</code></li>
+          <li><strong>Run</strong><code>macro_stress_testing.ipynb</code> top to bottom (~10 min). It rewrites every table, figure and this site's data file.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Where things are</h3>
+        <ul class="clean">
+          <li><a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor/blob/main/macro_stress_testing.ipynb">macro_stress_testing.ipynb</a>: full pipeline with outputs</li>
+          <li><a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor/tree/main/src">src/</a>: data build, lag/merge, leakage checks, censoring audit</li>
+          <li><a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor/blob/main/src/config.py">src/config.py</a>: splits, feature groups, grids, seeds</li>
+          <li><a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor/tree/main/reports/results">reports/results/</a>: every result table as CSV</li>
+          <li><a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor/blob/main/predict.py">predict.py</a>: command-line scoring with the saved models</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>AI use and citations</h3>
+        <p style="font-size:.92rem">AI assistants (Google Antigravity/Gemini, then Anthropic Claude) helped with code scaffolding, the website, documentation and an audit of the
+          pipeline. Problem framing, modelling decisions and interpretation are the author's. Full disclosure and references are in the
+          <a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor#8-ai-use-disclosure">README</a>.</p>
+        <p style="font-size:.92rem;margin:0">Data: LendingClub via Kaggle; FRED, Federal Reserve Bank of St. Louis. Tools: scikit-learn, statsmodels, LightGBM, pandas, Chart.js.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h4>Macro Stress Testing on Loan Defaults</h4>
+        <p>ES 335 Machine Learning course project, IIT Gandhinagar. Kunal Kashyap.</p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <p><a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor">GitHub repository</a><br>
+          <a href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor/blob/main/README.md">README &amp; setup</a><br>
+          <a href="#question">Back to top</a></p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p><a href="mailto:kunalkashyap2603@gmail.com">kunalkashyap2603@gmail.com</a></p>
+      </div>
+    </div>
+    <p class="fine">Results generated <span data-k="generated">2026</span> by the notebook. Educational project; not credit advice.</p>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged figure"><img alt=""></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/data/site-data.js?v=7"></script>
+<script src="assets/js/site.js?v=7"></script>
 </body>
 </html>

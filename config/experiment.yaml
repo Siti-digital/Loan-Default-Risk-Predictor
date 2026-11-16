@@ -2,7 +2,7 @@
 # ES 335: Macro-Aware Credit Risk Experiment Configuration
 # Project: Does the Local / Systematic Economy at Origination Improve Default Prediction?
 # Course: ES 335 Machine Learning | IIT Gandhinagar
-# Status: FROZEN METHODOLOGY (Pre-Phase 4 Alignment)
+# Status: FROZEN METHODOLOGY. Machine-readable values live in src/config.py; this file records the design.
 # ==============================================================================
 
 research_question: >
@@ -49,8 +49,8 @@ temporal_split:
   train_window:
     start_date: "2007-01-01"
     end_date: "2014-12-31"
-    n_loans: 337996
-    default_rate: 0.1320
+    n_loans: 337834
+    default_rate: 0.1316
     economic_regimes: "Pre-crisis peak (2007), Great Recession shock (2008-2010), Recovery (2011-2014)"
   
   expanding_window_cv:
@@ -87,8 +87,7 @@ features:
   borrower_numerical:
     - "annual_inc"
     - "dti"
-    - "fico_range_low"
-    - "fico_range_high"
+    - "fico_avg"          # midpoint of fico_range_low / fico_range_high
     - "open_acc"
     - "pub_rec"
     - "revol_util"
@@ -103,11 +102,12 @@ features:
     - "UNRATE_change_6m"   # 6-Month Change in National Unemployment Rate (percentage points)
     - "CPI_YoY_Inflation" # 12-Month Change in CPI (%)
 
+  log_transformed:
+    - "annual_inc"        # log1p, chosen on CV folds (raw vs log check in Phase 5)
+
   lender_benchmark_additional:
     - "int_rate"
-    - "installment"
-    - "grade"
-    - "sub_grade"
+    - "installment"       # grade / sub_grade are not in the processed extract
 
   forbidden_post_origination_leakage:
     - "total_pymnt"
@@ -192,6 +192,19 @@ models:
     name: "Lender-Information Benchmark"
     type: "sklearn LogisticRegression"
     features: "borrower_numerical + borrower_categorical + lender_benchmark_additional"
+
+model_selection:
+  rule: "highest mean PR-AUC over CV folds 1-2; the 2015 holdout is never used"
+  logistic_C_grid: [0.01, 0.1, 1.0]
+  lightgbm_grid: "4 settings of num_leaves / max_depth / n_estimators / learning_rate (see src/config.py)"
+  random_seed: 42
+  decision_threshold: "training base rate (0.1316), fixed before testing"
+
+extra_experiments:
+  - "Label-availability embargo: train on loans issued <= 2011-12, test 2015"
+  - "Macro-only logistic regression"
+  - "Model C + dti x UNRATE, fico x UNRATE interactions"
+  - "Model C with class_weight=balanced (calibration diagnostic)"
 
 # ------------------------------------------------------------------------------
 # 7. Evaluation Metrics & Statistical Inference

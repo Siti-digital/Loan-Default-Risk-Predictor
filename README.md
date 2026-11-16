@@ -1,340 +1,168 @@
-# Macro-Aware Credit Risk: Does the Local / Systematic Economy at Origination Improve Default Prediction?
+# Macro Stress Testing on Loan Defaults
 
-**Course:** ES 335: Machine Learning (Indian Institute of Technology Gandhinagar)  
-**Author / Developer:** Kunal Kashyap  
-**Contact:** kunalkashyap2603@gmail.com | +91 7577815607 | IIT Gandhinagar, Palaj, Gujarat, PIN 382355  
-**Submission Due Date:** November 17, 2026  
+**Do macroeconomic conditions known at origination improve retail loan default prediction beyond the borrower's application data?**
 
----
+ES 335 Machine Learning, IIT Gandhinagar · Kunal Kashyap
 
-## 📌 Submission Links & Quick Access
-
-* **🌐 Live Interactive Web Application (GitHub Pages):**  
-  [https://siti-digital.github.io/Loan-Default-Risk-Predictor/](https://siti-digital.github.io/Loan-Default-Risk-Predictor/)
-
-* **💻 GitHub Source Repository:**  
-  [https://github.com/Siti-digital/Loan-Default-Risk-Predictor](https://github.com/Siti-digital/Loan-Default-Risk-Predictor)
-
-* **📓 Primary Research & Modeling Notebook:**  
-  [`macro_stress_testing.ipynb`](macro_stress_testing.ipynb) (7 fully executed econometric & ML phases)
-
-* **🖥️ Interactive Standalone CLI Predictor:**  
-  [`predict.py`](predict.py) (Menu-driven terminal interface with datatype-guided inputs & stress test modes)
-
-* **📦 Pre-Trained Binary Model Artifact:**  
-  [`loan_default_predictor.bin`](loan_default_predictor.bin) (Self-contained joblib serialized model bundle)
+| | |
+|---|---|
+| Project website | **https://siti-digital.github.io/Loan-Default-Risk-Predictor/** |
+| Full pipeline with outputs | [`macro_stress_testing.ipynb`](macro_stress_testing.ipynb) |
+| Every result table | [`reports/results/`](reports/results/) |
+| Figures | [`reports/figures/`](reports/figures/) |
+| Command-line scoring tool | [`predict.py`](predict.py) + [`loan_default_predictor.bin`](loan_default_predictor.bin) |
 
 ---
 
-## 1. Executive Summary & Problem Formulation
+## 1. Problem
 
-### 1.1 Core Research Question
-> **"Does incorporating macroeconomic conditions available at loan origination improve retail loan default prediction beyond borrower and loan application characteristics?"**
+| Item | Definition |
+|---|---|
+| Question | Does adding national macro indicators known at origination (unemployment rate, its 6-month change, CPI inflation) improve default prediction over a model that uses only borrower application data? |
+| One row | One 36-month LendingClub personal loan, as it looked in its issue month. |
+| Target | `default = 1` for `Charged Off`, `Default`, `Does not meet the credit policy. Status:Charged Off`; `0` for `Fully Paid` and its credit-policy twin. Loans without a final status are excluded. |
+| Prediction time | The issue month. Inputs: application fields plus macro data published before that month (2-month lag). |
+| Output | Probability of default over the loan's life. |
+| Scope of the claim | Predictive comparison on one US lender, 2007–2015, approved loans only. Coefficients are associations, not causal effects. |
 
-Traditional credit scoring models (e.g., application scorecards) evaluate borrower default risk using individual credit snapshots (FICO score, debt-to-income ratio, annual income). However, regulatory stress testing (e.g., Federal Reserve CCAR/DFAST, Basel III/IV Internal Ratings-Based approach) requires understanding how systematic macroeconomic conditions affect default likelihood. 
+## 2. Headline results
 
-This project investigates whether systematic macroeconomic indicators (national unemployment rate, momentum of unemployment, and CPI inflation) provide statistically and economically significant marginal predictive power over borrower fundamentals at the time of origination. This is formulated strictly as a **predictive comparison**, not a causal estimation.
+Evaluated once on the untouched 2015 vintage (283,026 loans, default rate 14.89%). CV = mean of the 2013 and 2014 validation folds.
 
-### 1.2 Problem Formulation & Machine Learning Setup
-* **Unit of Analysis:** A single originated retail unsecured installment loan (36-month maturity).
-* **Target Variable ($Y$):** Binary default outcome representing an actual observed repayment outcome:
-  $$Y = \begin{cases} 1 & \text{if Default (Charged Off, Default, or Credit Policy Charged Off)} \\ 0 & \text{if Fully Paid (Fully Paid or Credit Policy Fully Paid)} \end{cases}$$
-  *(Unresolved loans labeled `Current`, `In Grace Period`, and `Late` are explicitly excluded from training and evaluation to prevent right-censoring bias).*
-* **Decision Horizon & Information Set:** Origination date ($t_{\text{issue}}$). All borrower credit attributes and macroeconomic factors are strictly restricted to information available **at or prior to** the origination month.
+| Model | Inputs | PR-AUC | ROC-AUC | Brier | Mean PD | CV PR-AUC |
+|---|---|---:|---:|---:|---:|---:|
+| A · baseline | training default rate | 0.1489 | 0.5000 | 0.1270 | 13.16% | 0.1303 |
+| B · logistic regression | borrower | 0.2211 | 0.6387 | 0.1231 | 13.78% | 0.1882 |
+| **C · logistic regression** | **borrower + macro** | **0.2207** | **0.6382** | **0.1233** | **13.09%** | **0.1888** |
+| D-base · LightGBM | borrower | 0.2262 | 0.6458 | 0.1227 | 13.75% | 0.1923 |
+| D · LightGBM | borrower + macro | 0.2258 | 0.6441 | 0.1226 | 15.48% | 0.1892 |
+| Lender benchmark | borrower + `int_rate`, `installment` | 0.2621 | 0.6848 | 0.1210 | 12.12% | 0.2130 |
 
----
+Model C − Model B, 95% month-block bootstrap (500 draws, 12 monthly clusters):
 
-## 2. Key Domain Concepts & Econometric Rigor
+| Difference | Estimate | 95% interval | Reading |
+|---|---:|---|---|
+| PR-AUC | −0.00038 | [−0.00086, +0.00011] | no detectable difference |
+| ROC-AUC | −0.00049 | [−0.00096, −0.00002] | B slightly better |
+| Brier | +0.00025 | [+0.00014, +0.00040] | B slightly better |
 
-To satisfy ES 335 rubric expectations and quantitative risk standards, this project implements the following principles:
+**Conclusions**
 
-1. **Probability of Default (PD) & Calibration Preservation:**  
-   Rather than arbitrary binary classification cutoffs, credit risk models predict continuous probabilities $P(Y=1 \mid X) \in [0, 1]$. Continuous PDs drive capital reserve calculations, Expected Loss ($\text{EL} = \text{PD} \times \text{LGD} \times \text{EAD}$), and risk-weighted assets. We enforce **unweighted modeling (`class_weight=None`)** to preserve true base-rate calibration ($\sim 13\text{--}15\%$) without artificially distorting predicted probabilities.
-2. **Point-in-Time (PIT) Publication Lag & Look-Ahead Leakage Prevention:**  
-   Macroeconomic variables are published on a reporting lag (e.g., June unemployment is published in July, and revised in August). To strictly eliminate look-ahead bias:
-   * Stationary macroeconomic series (`UNRATE`, `UNRATE_change_6m`, `CPI_YoY_Inflation`) are constructed first and then shifted by a conservative **2-month publication lag** (`shift(2)`).
-   * Borrower micro-data and lagged macro-data are joined chronologically by origination month.
-3. **Maturity Audit & Strict Chronological Out-of-Time (OOT) Partitioning:**  
-   Right-censoring occurs when loans have not had sufficient time to observe their full repayment cycle. An empirical audit across all 2.26 million LendingClub loans established:
-   * **2017 Cohort:** 59.88% unresolved / censored $\rightarrow$ **Rejected as test set**.
-   * **2016 Cohort:** 28.17% unresolved / censored $\rightarrow$ **Rejected as test set**.
-   * **2015 Cohort:** 0.052% unresolved $\rightarrow$ Fully matured 36-month cohort.
-   * **Training Partition:** Originations from **2007 through 2014** (337,996 loans; 13.20% default rate; captures the 2008–2010 Great Recession macroeconomic shock).
-   * **Expanding-Window Validation:** Fold 1 (Train 2007–2012 $\rightarrow$ Validate 2013); Fold 2 (Train 2007–2013 $\rightarrow$ Validate 2014).
-   * **Untouched Out-of-Time Holdout Test:** Full year **2015** (283,026 loans; 14.89% default rate; 0.052% unresolved).
-4. **Separation of Risk Tiers (Lender Pricing Endogeneity):**  
-   Interest rate (`int_rate`), monthly installment (`installment`), and loan grade (`grade`, `sub_grade`) are determined by LendingClub's own internal risk scoring and pricing model. To evaluate whether macro factors add value to *underlying borrower risk*, these lender-pricing variables are excluded from the primary borrower-only baseline (Model B) and macro models (Models C & D), and evaluated separately in an isolated **Lender Benchmark**.
-5. **Statistical Uncertainty & Time-Block Inference:**  
-   Because all loans originated in a given month share identical macroeconomic values, standard row-level i.i.d. standard errors and vanilla row-level bootstraps severely understate standard errors. We use **month-clustered standard errors** for econometric models and **month-level time-block bootstrapping** for out-of-time test metric confidence intervals.
+1. Borrower data carry the signal (PR-AUC 0.221 vs 0.149 no-skill). Adding the macro block does not improve ranking or calibration on 2015, on the CV years, or with non-linear trees (D vs D-base).
+2. Out of time, the macro terms push the predicted default rate the **wrong way** in all three years (2013, 2014, 2015). The monthly macro shift correlates −0.73 with the borrower model's miss. Falling unemployment told the model risk was falling, while LendingClub's later vintages defaulted more.
+3. The lender benchmark shows the missing information is borrower-level: missed defaults look like good borrowers on our fields but were charged ~2 points more interest.
+4. With realistic label timing (training only on loans whose outcome was known by Jan 2015), PR-AUC drops to 0.198 for both B and C, and C's calibration gets much worse (mean PD 22.1% vs 14.9% actual).
 
----
+## 3. Data and access
 
-## 3. Project Architecture & Directory Layout
+| Source | What | Access |
+|---|---|---|
+| LendingClub accepted loans 2007–2018Q4 | 2,260,701 loans × 151 columns, ~1.6 GB | Kaggle dataset [`wordsforthewise/lending-club`](https://www.kaggle.com/datasets/wordsforthewise/lending-club), free account. Not redistributed here. |
+| FRED (Federal Reserve Bank of St. Louis) | Monthly `UNRATE`, `CPIAUCSL`, `FEDFUNDS`, `UMCSENT`, `DGS10`, 2007–2018 | Free API key from https://fred.stlouisfed.org/docs/api/api_key.html, stored in a git-ignored `.env` as `FRED_API_KEY=...` |
 
-```text
-├── README.md                                 # Complete project blueprint & documentation
-├── CHANGES_SUMMARY.md                        # Methodological corrections summary
-├── requirements.txt                          # Python 3.12 dependencies
-├── .gitignore                                # Git ignore file (protects API keys & raw data)
-├── macro_stress_testing.ipynb                # End-to-end quantitative ML pipeline notebook
-├── config/
-│   └── experiment.yaml                       # Frozen configuration (splits, features, seeds)
-│
-├── reports/                                  # Audit reports and empirical figures
-│   ├── pre_phase4_final_audit.md             # Empirical maturity, target mapping & split audit
-│   ├── maturity_audit_table.csv              # Full-sample censoring audit across all years
-│   └── figures/
-│       └── loan_maturity_censoring.png       # Visualization of right-censoring progression
-│
-├── data/                                     # Data storage (git-ignored)
-│   ├── raw/                                  # LendingClub CSV & raw FRED series
-│   │   └── .gitkeep
-│   └── processed/                            # Cleaned, PIT-merged analytical datasets
-│       └── .gitkeep
-│
-├── src/                                      # Modular source code
-│   ├── __init__.py
-│   ├── config.py                             # Python configuration loader
-│   ├── maturity_audit.py                     # Empirical censoring calculation script
-│   ├── macro_processing.py                   # Stationarity & 2-month publication lag pipeline
-│   ├── validation_checks.py                  # Pre-flight data leakage & integrity suite
-│   ├── data_loader.py                        # FRED API & Kaggle data fetchers
-│   ├── preprocessing.py                      # PIT merge, lag adjustment, leakage prevention
-│   ├── feature_engineering.py                # Pre-origination transformations & scaling
-│   ├── models.py                             # statsmodels Logit & LightGBM implementations
-│   ├── evaluate.py                           # PR-AUC, ROC-AUC, Brier score, time-block bootstrap
-│   └── stress_testing.py                     # Origination sensitivity analysis
-│
-├── web/                                      # ES 335 Static GitHub Pages Deliverable
-│   ├── index.html                            # Interactive stress-testing web app
-│   ├── style.css                             # Responsive styling
-│   ├── script.js                             # Client-side logistic sigmoid sensitivity explorer
-│   └── model_coefficients.json               # Exported beta weights & intercept
-│
-└── ES 335 Project Guidlines.pdf              # Official course syllabus & rubric
-```
+Only `UNRATE`, `UNRATE_change_6m` and `CPI_YoY_Inflation` enter the models. Credentials and raw data are excluded by `.gitignore`; no keys are in the history.
 
----
+**Data-quality issues found and how they are handled** (details in the notebook, Phase 4):
 
-## 4. End-to-End Quantitative Machine Learning Pipeline
+- **Right-censoring:** 28% / 60% / 88% of 2016 / 2017 / 2018 loans are unresolved, so only vintages up to Dec 2015 are used (0.05% unresolved).
+- **`mort_acc`** is not recorded for 2007–2011 and part of 2012 (6% of the cohort, 11% of training rows). It is median-imputed on training rows.
+- **Income:** heavy right tail (113 loans above $1M, skew 45), so `log1p` is applied. **DTI:** 5 loans at 999 (placeholder), all in 2015, kept.
+- 161 Jun–Aug 2007 loans are dropped because the 6-month unemployment change plus the 2-month lag needs 8 months of macro history.
 
-```mermaid
-flowchart TD
-    A["Raw Micro-Data<br/>(LendingClub 2.26M Loans)"] --> B["Target & Maturity Resolution<br/>• 36-Month Cohort (2007-2015)<br/>• Completed Outcomes Only<br/>• Drop Current & Late (Censored)"]
-    C["Macroeconomic Series<br/>(FRED: UNRATE, CPIAUCSL, FEDFUNDS)"] --> D["Macro Stationarity & Lag<br/>• YoY CPI Inflation & 6M Delta UNRATE<br/>• Conservative 2-Month Publication Lag"]
-    
-    B --> E["Point-in-Time Chronological Merge<br/>pd.merge on issue_date == macro_date"]
-    D --> E
-    
-    E --> F["Feature Engineering & Clean Groups<br/>• Borrower-Only Group (No Pricing)<br/>• Macro Group (Lagged Stationary)<br/>• Train-Only Imputation & Scaling"]
-    
-    F --> G["Strict Chronological OOT Split<br/>• Train: 2007-2014 (338k loans)<br/>• Expanding Val: 2013, 2014<br/>• Holdout Test: 2015 (283k loans)"]
-    
-    G --> H1["Model A: Historical Baseline<br/>Train Default Rate"]
-    G --> H2["Model B: Borrower-Only Logit<br/>FICO, DTI, Income, Accs, Util"]
-    G --> H3["Model C: Borrower + Macro Logit<br/>Model B + UNRATE, dUNRATE, CPI<br/>Month-Clustered Standard Errors"]
-    G --> H4["Model D: Borrower + Macro LightGBM<br/>Nonlinear Trees, Unweighted"]
-    G --> H5["Optional Lender Benchmark<br/>int_rate, installment, grade"]
-    
-    H1 --> I["Evaluation & Statistical Testing<br/>• PR-AUC & ROC-AUC<br/>• Brier Score & Reliability Diagrams<br/>• Time-Block Bootstrap CIs (Month Clusters)"]
-    H2 --> I
-    H3 --> I
-    H4 --> I
-    H5 --> I
-    
-    I --> J["Origination Sensitivity Analysis<br/>web/model_coefficients.json"]
-    J --> K["Interactive Static Web Explorer<br/>Bounded Origination Macro Sliders"]
-```
+## 4. Setup and reproduction
 
-### Detailed Development Phases
-
-#### Phase 1: Environment Setup & Toolchain Initialization
-* Configure virtual environment with **Python 3.12** (`.venv`).
-* Securely configure API keys via `.env` (`FRED_API_KEY`).
-* Register Jupyter kernel `Python (.venv) (Loan Predictor)`.
-
-#### Phase 2: Data Procurement
-* **Micro-Data:** LendingClub loan dataset containing borrower credit attributes (`annual_inc`, `dti`, `fico_range_low`, `fico_range_high`, `open_acc`, `pub_rec`, `revol_util`, `mort_acc`, `loan_amnt`, `home_ownership`) and origination date (`issue_d`).
-* **Macro Series:** Pull monthly historical indicators from FRED API:
-  * `UNRATE`: US National Civilian Unemployment Rate.
-  * `CPIAUCSL`: Consumer Price Index for All Urban Consumers.
-  * `FEDFUNDS`: Federal Funds Effective Rate.
-  * `UMCSENT`: University of Michigan Consumer Sentiment Index.
-  * `DGS10`: 10-Year Treasury Constant Maturity Rate.
-
-#### Phase 3: Data Cleaning & Point-in-Time (PIT) Chronological Merging
-* **Target Outcome Isolation:** Retain completed loans:
-  * Default ($Y = 1$): `Charged Off`, `Default` (40 genuine pre-charge-off default loans), `Does not meet the credit policy. Status:Charged Off` (761 legacy loans).
-  * Fully Paid ($Y = 0$): `Fully Paid`, `Does not meet the credit policy. Status:Fully Paid` (1,988 legacy loans).
-  * Exclude unresolved states (`Current`, `In Grace Period`, `Late (16-30 days)`, `Late (31-120 days)`).
-* **Zero Future Leakage:** Drop post-origination tracking columns (`total_pymnt`, `recoveries`, `collection_recovery_fee`, `last_pymnt_d`, `last_pymnt_amnt`, `next_pymnt_d`).
-* **Stationarity & Publication Lag:** Construct stationary predictors (`CPI_YoY_Inflation`, `UNRATE_change_6m`) and apply a **2-month publication lag** (`shift(2)`) to eliminate look-ahead leakage.
-* **Point-in-Time Merge:** Chronologically join loan origination month to lagged macro indicators.
-
-#### Phase 4: Feature Engineering & Preprocessing
-* **Pre-Origination Feature Groups:**
-  * **Borrower Group:** Log-transformed income $\ln(1 + \text{annual\_inc})$, $\ln(1 + \text{loan\_amnt})$, debt-to-income (`dti`), mean FICO score, `revol_util`, `open_acc`, `pub_rec`, `mort_acc`, `home_ownership` (one-hot encoded).
-  * **Macro Group:** 2-month lagged stationary indicators (`UNRATE`, `UNRATE_change_6m`, `CPI_YoY_Inflation`).
-  * **Lender Benchmark Group:** `int_rate`, `installment`, `grade`, `sub_grade`.
-* **Interaction Policy:** Primary models use clean main effects. Ad-hoc product terms are rejected. Specific interactions (`DTI × UNRATE`, `FICO × UNRATE`) are reserved strictly for controlled ablation tests.
-* **Leakage-Free Preprocessing:** `SimpleImputer(strategy='median')` and `StandardScaler` are fitted **strictly on the 2007–2014 training partition** and applied out-of-sample to validation and test partitions.
-
-#### Phase 5: Model Training & Out-of-Time Validation
-* **Strict Chronological Partitioning:**
-  * **Training Set:** 2007–2014 (337,996 loans; 13.20% default rate).
-  * **Expanding-Window Validation:** 2013 and 2014 validation cohorts.
-  * **Untouched Holdout Test:** Full year 2015 (283,026 loans; 14.89% default rate; 0.052% unresolved).
-* **Model Suite:**
-  * **Model A (Historical Baseline):** Fixed historical training default rate ($\bar{y}_{\text{train}} \approx 13.20\%$).
-  * **Model B (Borrower-Only Logit):** Logistic Regression trained exclusively on pre-origination borrower fundamentals (no lender pricing terms).
-  * **Model C (Borrower + Macro Logit):** Econometric `statsmodels.Logit` on Model B + Macro features, computing **month-clustered standard errors** and odds ratios ($e^\beta$).
-  * **Model D (Borrower + Macro LightGBM):** Non-linear gradient boosting on Model C features, unweighted (`class_weight=None`) to evaluate non-linear feature combinations.
-  * **Lender Benchmark:** Evaluates predictive power of `int_rate`, `installment`, `grade`, `sub_grade` as a reference point.
-
-#### Phase 6: Model Evaluation & Statistical Rigor
-* **Evaluation Metrics:** Evaluated on the unseen 2015 holdout test set:
-  * **PR-AUC (Precision-Recall Area Under Curve):** Primary metric for imbalanced credit default.
-  * **ROC-AUC:** Overall discrimination capacity.
-  * **Brier Score Loss ($BS$):** Evaluates continuous probability calibration:
-    $$BS = \frac{1}{N} \sum_{i=1}^N (\hat{p}_i - y_i)^2$$
-  * **Reliability Diagrams:** Binned empirical calibration curves (`sklearn.calibration.calibration_curve`).
-* **Statistical Significance:** Compute 95% confidence intervals using **month-level time-block bootstrapping** to account for the monthly grouping of macroeconomic observations.
-
-#### Phase 7: ES 335 Deliverable — Static GitHub Pages Web App
-* Export learned model parameters to `web/model_coefficients.json`.
-* Implement the logistic sigmoid function directly in client-side JavaScript:
-  $$P(\text{Default}) = \frac{1}{1 + e^{-(\beta_0 + \sum \beta_i X_i)}}$$
-* Provide interactive HTML5/CSS/JS sliders for borrower fundamentals and macroeconomic conditions, clamped to observed 2007–2014 training distributions to avoid out-of-distribution extrapolation.
-* Provide clear explanatory text explaining that the web simulator is an **origination-time sensitivity explorer**, not a dynamic loan life-cycle simulator.
-
----
-
-## 5. Setup, Rebuild Steps & Code Location
-
-### 5.1 Repository Code Location Map
-The project is modularly structured for full auditability and reproducibility:
-
-| File / Directory | Description & Purpose |
-| :--- | :--- |
-| **[`macro_stress_testing.ipynb`](macro_stress_testing.ipynb)** | **Primary Notebook:** Complete end-to-end 7-phase research pipeline, statistical tests, model training, and OOT evaluation. |
-| **[`predict.py`](predict.py)** | **Interactive CLI Application:** Standalone menu-driven terminal tool for real-time default risk prediction and stress-testing. |
-| **[`loan_default_predictor.bin`](loan_default_predictor.bin)** | **Serialized Model Artifact:** Self-contained `joblib` bundle containing Model C weights, scalers, and metadata. |
-| **[`docs/`](docs/) & [`web/`](web/)** | **Static Web Application:** Complete client-side GitHub Pages deliverable (`index.html`, `style.css`, `script.js`). |
-| **[`src/`](src/)** | **Core Modules:** Pure Python implementations of data loaders, stationarity pipelines, feature engineering, and metrics. |
-| **[`config/experiment.yaml`](config/experiment.yaml)** | **Experiment Configuration:** Frozen hyperparameters, temporal splits, seed values, and variable definitions. |
-| **[`reports/`](reports/)** | **Empirical Audits:** Full maturity audit table (`maturity_audit_table.csv`) and generated publication figures. |
-| **[`.github/workflows/`](.github/workflows/)** | **CI/CD Automation:** GitHub Actions workflow for automated deployment to GitHub Pages. |
-
----
-
-### 5.2 Environment Setup & Installation
-The project runs on **Python 3.12**:
-
-```powershell
-# 1. Clone repository
+```bash
 git clone https://github.com/Siti-digital/Loan-Default-Risk-Predictor.git
-cd "Loan-Default-Risk-Predictor"
-
-# 2. Activate virtual environment (e.g., ai-env or .venv)
-.\ai-env\Scripts\Activate.ps1
-# Or in standard bash: source .venv/bin/activate
-
-# 3. Install dependencies
-pip install --upgrade pip
+cd Loan-Default-Risk-Predictor
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
----
+1. **Loans:** download `accepted_2007_to_2018Q4.csv.gz` from Kaggle, decompress it and save it as `data/raw/microdata.csv`. Then run
+   `python src/microdatafilterscript.py`, which writes `data/processed/microdataprocessed.csv` (15 application-time columns plus outcome).
+2. **Macro:** put `FRED_API_KEY=...` in `.env`, then run `python src/build_macrodata.py`, which writes `data/processed/macrodata.csv`.
+3. **Optional censoring audit:** `python src/maturity_audit.py` regenerates `reports/maturity_audit_table.csv` and `reports/figures/loan_maturity_censoring.png`.
+4. **Pipeline:** run `macro_stress_testing.ipynb` top to bottom (about 10 minutes on a laptop; the 500-draw bootstrap takes about 4). Or run it headless:
+   ```bash
+   jupyter nbconvert --to notebook --execute --inplace macro_stress_testing.ipynb
+   ```
+   This rewrites every table in `reports/results/`, every figure in `reports/figures/`, `loan_default_predictor.bin`, and the website data file `docs/assets/data/site-data.js`.
+5. **Website locally:** `python -m http.server --directory docs 8000`, then open http://localhost:8000.
+6. **CLI scoring:** `python predict.py`
 
-### 5.3 Data Access & Acquisition Instructions
-1. **LendingClub Loan Micro-Data (2.26 Million Loans):**
-   - **Source:** Kaggle LendingClub Loan Dataset (`accepted_2007_to_2018Q4.csv.gz` or `loan.csv`).
-   - **Kaggle URL:** [https://www.kaggle.com/datasets/wordsforthewise/lending-club](https://www.kaggle.com/datasets/wordsforthewise/lending-club)
-   - **Placement:** Download and place raw CSV in `data/raw/accepted_2007_to_2018Q4.csv.gz` (or `data/raw/loan.csv`).
-   - **Access Notice:** The raw 2.26M loan dataset (~1.6 GB uncompressed) is excluded from version control via `.gitignore`. The full pre-processed analytical tables and serialized parameters are packaged inside the repository.
+Randomness: every model and the bootstrap use seed 42.
 
-2. **Macroeconomic Time-Series Data (FRED):**
-   - **Source:** Federal Reserve Bank of St. Louis Economic Data (FRED).
-   - **Series Pulled:**
-     - `UNRATE` (Civilian Unemployment Rate, Monthly, Seasonally Adjusted)
-     - `CPIAUCSL` (Consumer Price Index for All Urban Consumers, Monthly)
-     - `FEDFUNDS` (Federal Funds Effective Rate, Monthly)
-     - `UMCSENT` (University of Michigan Consumer Sentiment, Monthly)
-     - `DGS10` (10-Year Treasury Constant Maturity Rate, Monthly)
-   - **FRED API Key:** Store your key in `.env` as `FRED_API_KEY=your_key`. Automated fallback is built into `src/data_loader.py` using `pandas_datareader` if an API key is not supplied.
+## 5. Method: exact splits and preprocessing
 
----
+- **Cohort:** 36-month loans, issued Sep 2007 – Dec 2015, resolved outcomes only, one exact duplicate removed → **620,860 loans** (13.94% default).
+- **Point-in-time macro merge** ([`src/macro_processing.py`](src/macro_processing.py)): CPI YoY and the 6-month unemployment change are computed on raw monthly data, then all macro columns are shifted by **2 months** and joined on issue month. The code asserts `issue_date > economic_reference_date` for every row.
+- **Features:** borrower = `annual_inc` (log1p), `dti`, `fico_avg`, `open_acc`, `pub_rec`, `revol_util`, `mort_acc`, `loan_amnt`, `home_ownership` (one-hot); macro = `UNRATE`, `UNRATE_change_6m`, `CPI_YoY_Inflation`. Lender benchmark adds `int_rate`, `installment` (`grade`/`sub_grade` are not in the processed extract).
+- **Leakage control:** median imputation, scaling and encoding are inside a scikit-learn `ColumnTransformer`, fitted on the training window of each fold and on 2007–2014 for the final models. [`src/validation_checks.py`](src/validation_checks.py) runs six integrity checks.
+- **Split (fixed before modelling, [`src/config.py`](src/config.py)):** train 2007–2014 (337,834 loans); expanding-window CV inside it: fold 1 = train ≤ 2012 → validate 2013 (100,422), fold 2 = train ≤ 2013 → validate 2014 (162,570); test = 2015 (283,026), used once.
+- **Model selection on CV only:** raw vs log income; logistic `C` ∈ {0.01, 0.1, 1}; four LightGBM settings. Each is selected by mean CV PR-AUC → `C = 0.01` for B, C and the lender benchmark; LightGBM D-base 15 leaves / depth 5 / 200 trees, D 31 leaves / depth 6 / 200 trees (lr 0.03).
+- **No class re-weighting** (keeps PDs calibrated). The `balanced` variant is reported as a diagnostic: mean PD 47.7%, Brier 0.235.
+- **Metrics:** PR-AUC (primary), ROC-AUC, Brier, calibration-in-the-large and slope. Confusion matrices use the **training** base rate (13.16%) as the threshold.
+- **Inference:** statsmodels Logit for Model C with standard errors clustered on 88 issue months. Model C − B differences use a month-block bootstrap on 2015.
+- **Extra experiments:** label-availability embargo (train on loans issued ≤ 2011), macro-only model, `dti × UNRATE` / `fico × UNRATE` interactions, balanced weights.
 
-### 5.4 Rebuilding the Pipeline & Execution Options
+## 6. Limitations
 
-#### Option A: Running the Interactive CLI Tool (`predict.py`)
-```powershell
-python predict.py
+- Only 88 training months and 12 test months of macro variation; the bootstrap with 12 clusters is rough.
+- 2015 was a calm year, so the test cannot show whether macro data help in a downturn.
+- Approved loans only. LendingClub's underwriting changed over the cycle, so macro coefficients mix the economy with who was approved.
+- Macro at origination only. Conditions during repayment would need a hazard model with time-varying covariates.
+- National series; state-level unemployment (`addr_state`) is the natural next step.
+- The main split trains on outcomes not yet observable at the start of 2015 (see the embargo experiment). FRED values are today's vintage, not first releases.
+
+## 7. Repository map
+
+```text
+macro_stress_testing.ipynb      Full pipeline, Phases 1-7, executed with outputs
+predict.py                      Interactive CLI scoring with the saved models
+loan_default_predictor.bin      joblib bundle of fitted pipelines (written by Phase 7)
+requirements.txt                Pinned package versions
+src/
+  config.py                     Feature groups, split dates, CV folds, grids, seeds (config/__init__.py mirrors it)
+  microdatafilterscript.py      Raw LendingClub CSV -> 15-column processed extract
+  build_macrodata.py            FRED API -> data/processed/macrodata.csv
+  macro_processing.py           Stationary transforms, 2-month lag, point-in-time merge
+  validation_checks.py          Six leakage / integrity checks
+  maturity_audit.py             Right-censoring audit table and figure
+config/experiment.yaml          Human-readable record of the frozen design
+reports/
+  results/                      All result tables (CSV) + site_data.json
+  figures/                      All figures used on the website
+  maturity_audit_table.csv      Censoring audit by vintage
+  pre_phase4_final_audit.md     Design audit written before modelling
+  Macro_Stress_Testing_Master_Defense_Guide.pdf   Personal viva notes from an earlier run (numbers superseded by the notebook)
+docs/                           GitHub Pages site (index.html, assets/css, assets/js, assets/data, assets/figures)
+.github/workflows/deploy-pages.yml   Publishes docs/ to GitHub Pages
 ```
-* **Mode 1:** Interactive menu prompting for individual inputs line-by-line (FICO, DTI, Income, UNRATE, CPI, UNRATE Shock) with datatype guidance.
-* **Mode 2:** Instant macroeconomic stress-test simulations (Severe 2008 Recession, Benign Boom, Stagflation).
-* **Mode 3:** Batch evaluation from CSV.
 
-#### Option B: Re-executing the Research Pipeline Notebook
-```powershell
-jupyter lab
-# Open macro_stress_testing.ipynb and select 'Run All Cells'
-```
-* Automatically verifies data maturity, constructs stationary series with 2-month publication lags, fits Models A through D, and exports test scorecards to `reports/` and `web/`.
+## 8. AI-use disclosure
 
-#### Option C: Running the Web Simulator Locally
-```powershell
-# Double-click docs/index.html or run:
-Start-Process "docs/index.html"
-```
-* The web app is 100% static client-side JavaScript and runs immediately in any web browser without requiring a local web server or backend runtime.
+- **Google Antigravity (Gemini-based agent):** scaffolding of `src/` modules, the first website version, documentation formatting.
+- **Anthropic Claude (Claude Code), November 2026:** audit of the repository against the rubric. It found and fixed:
+  - inconsistent 1- vs 2-month lag code;
+  - a decision threshold set from the test-set default rate;
+  - a LightGBM "tuning" claim with no tuning code;
+  - README entries for files that did not exist.
 
----
+  It also added the CV-based model selection, data-quality checks, error analysis, the embargo experiment, the result exports, and rebuilt the website. Visual design tokens came from the DesignMD catalogue (a fintech design system); the Higgsfield connector was tried but has no generation capability, so no AI-generated imagery is used.
+- **Author's own work:** problem formulation and scope, choice of data and the maturity cut-off, the point-in-time and calibration principles, final modelling decisions, reading and checking all outputs, and the interpretation and conclusions.
 
-## 6. ES 335 Course Rubric Alignment (100 Points)
+## 9. Citations
 
-| Rubric Dimension | Weight | Project Implementation & Evidence |
-| :--- | :---: | :--- |
-| **Problem Formulation & Scope** | 10 pts | Clear quantitative research question; target binary default defined; prediction horizon fixed strictly at origination time. |
-| **Data Understanding** | 10 pts | Full empirical maturity audit of 2.26M LendingClub loans; FRED official economic series; identification and exclusion of right-censoring in 2016–2018 cohorts. |
-| **Preprocessing & Statistical Reasoning** | 10 pts | Elimination of target-leakage columns; stationary transform (`CPI_YoY_Inflation`, `UNRATE_change_6m`); 2-month publication lag shift; transformations fit strictly on training set. |
-| **Baseline & Method Selection** | 15 pts | Rigorous progression: Historical baseline (Model A), Borrower-only baseline (Model B), Macro-augmented logit (Model C), and Macro-augmented LightGBM (Model D), plus isolated Lender Benchmark. |
-| **Evaluation Design & Metrics** | 20 pts | Strict chronological Out-of-Time (OOT) validation (2007–2014 Train vs 2015 Test); evaluation via PR-AUC, ROC-AUC, Brier score, reliability diagrams, and time-block bootstrap CIs. |
-| **Results, Errors & Limitations** | 10 pts | Odds ratio interpretation ($e^\beta$) with month-clustered standard errors; origination sensitivity exploration; candid discussion of observational credit data limitations and lender pricing endogeneity. |
-| **Reproducibility & Technical Integrity** | 5 pts | Modular code structure, automated pre-flight integrity verification suite (`src/validation_checks.py`), frozen configuration (`config/experiment.yaml`), secure `.env` credential management. |
-| **Interactive Website (GitHub Pages)** | 10 pts | Static web application hosted live on GitHub Pages displaying problem overview, results, and methodology. |
-| **Useful Interaction** | 5 pts | Real-time interactive origination sensitivity sliders clamped to empirical 2007–2014 training bounds, evaluating dynamic default probability via client-side sigmoid formula and animated speedometer. |
-| **Individual Defense** | 5 pts | Rigorous preparation for defending econometric choices, maturity-based censoring elimination, publication lags, and probability calibration. |
-| **Total** | **100 pts** | **100% Rubric Coverage** |
+- LendingClub Corporation, accepted loan data 2007–2018Q4, via Kaggle (N. George, `wordsforthewise/lending-club`).
+- U.S. Bureau of Labor Statistics, *Unemployment Rate* [UNRATE] and *CPI for All Urban Consumers* [CPIAUCSL], retrieved from FRED, Federal Reserve Bank of St. Louis.
+- Brier, G. W. (1950). Verification of forecasts expressed in terms of probability. *Monthly Weather Review*, 78(1), 1–3.
+- Saito, T., & Rehmsmeier, M. (2015). The precision-recall plot is more informative than the ROC plot when evaluating binary classifiers on imbalanced datasets. *PLoS ONE*, 10(3).
+- Cameron, A. C., Gelbach, J. B., & Miller, D. L. (2008). Bootstrap-based improvements for inference with clustered errors. *Review of Economics and Statistics*, 90(3), 414–427.
+- Merton, R. C. (1974). On the pricing of corporate debt. *Journal of Finance*, 29(2), 449–470.
+- Basel Committee on Banking Supervision, *International Convergence of Capital Measurement and Capital Standards* (IRB approach).
+- Pedregosa, F. et al. (2011). Scikit-learn: Machine learning in Python. *JMLR*, 12, 2825–2830.
+- Seabold, S., & Perktold, J. (2010). statsmodels: Econometric and statistical modeling with Python. *Proc. 9th Python in Science Conference*.
+- Ke, G. et al. (2017). LightGBM: A highly efficient gradient boosting decision tree. *NeurIPS 30*.
+- Chart.js (MIT licence) for the website charts.
 
----
-
-## 7. AI-Use Disclosure & External Citations
-
-### 7.1 AI-Use Disclosure
-In compliance with the **ES 335 Academic Honor Code** and AI-use transparency guidelines:
-* **Tool Utilized:** Generative AI assistant (Google Antigravity / Gemini-based coding agent).
-* **Scope of Assistance:**
-  1. Automated boilerplate scaffolding for modular Python modules (`src/`) and testing utilities.
-  2. Frontend user interface structuring (HTML5 semantic markup, CSS responsive styling, SVG speedometer geometry, and client-side JavaScript event listeners).
-  3. Documentation formatting, markdown tables, and Mermaid flow diagrams.
-* **Independent Author Contributions:**
-  1. The underlying mathematical and econometric problem formulation (predictive comparison vs. causal estimation, unweighted logit calibration preservation).
-  2. The empirical 2.26M loan maturity audit and the discovery of severe right-censoring in the 2016–2018 cohorts.
-  3. The rigorous 2-month publication lag policy eliminating Point-in-Time look-ahead bias.
-  4. The econometric interpretation of unemployment velocity ($\Delta U$) vs. static level effects, month-clustered standard errors, and time-block bootstrap inferences.
-  5. All final modeling decisions, code verification, error analysis, and defense readiness.
-
----
-
-### 7.2 Citations & External References
-* **Data Providers:**
-  * **LendingClub Corporation:** Historical retail loan micro-data (2007–2018Q4), accessed via Kaggle.
-  * **Federal Reserve Bank of St. Louis (FRED):** Macroeconomic series `UNRATE`, `CPIAUCSL`, `FEDFUNDS`, `UMCSENT`, `DGS10`.
-* **Regulatory & Academic Literature:**
-  * **Basel Committee on Banking Supervision (BCBS):** *International Convergence of Capital Measurement and Capital Standards* (Basel II/III Internal Ratings-Based framework for Probability of Default).
-  * **Board of Governors of the Federal Reserve System:** *Comprehensive Capital Analysis and Review (CCAR) and Dodd-Frank Act Stress Testing (DFAST)* methodologies for supervisory macroeconomic stress testing.
-  * **Merton, R. C. (1974):** *On the Pricing of Corporate Debt: The Risk Structure of Interest Rates*, Journal of Finance, 29(2), 449–470.
-  * **Brier, G. W. (1950):** *Verification of Forecasts Expressed in Terms of Probability*, Monthly Weather Review, 78(1), 1–3.
-* **Software & Open-Source Libraries:**
-  * Scikit-Learn (`sklearn`), Statsmodels (`statsmodels.discrete.discrete_model.Logit`), LightGBM (`lightgbm`), Pandas, NumPy, Matplotlib, Seaborn, Joblib.
+Contact: kunalkashyap2603@gmail.com

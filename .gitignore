@@ -64,3 +64,9 @@ data/*.ipynb
 .DS_Store
 Thumbs.db
 
+
+# Local tooling
+.claude/
+
+# Result tables are part of the submission
+!reports/results/*.csv
