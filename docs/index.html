@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/site.css?v=14">
+  <link rel="stylesheet" href="assets/css/site.css?v=15">
 </head>
 <body>
 <a class="sr-only" href="#question">Skip to content</a>
@@ -17,7 +17,6 @@
 <nav class="nav" aria-label="Sections">
   <div class="wrap nav-inner">
     <a class="brand" href="#top">
-      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-6 4 3 7-8"/></svg></span>
       Macro Stress Testing
     </a>
     <div class="nav-links" id="nav-links">
@@ -714,10 +713,29 @@
 
 <footer class="site">
   <div class="wrap">
+    <div class="contrib" id="contributions">
+      <h3>Individual contributions</h3>
+      <div class="contrib-grid">
+        <article class="person">
+          <h4>Kunal Kashyap <span>25110177</span></h4>
+          <p class="role">Data acquisition, final modelling and evaluation (notebook Phases 1, 2, 6, 7)</p>
+          <p>Specified the environment and acquired the two sources: LendingClub loan records (2.26M rows) and FRED monthly macro series (<code>UNRATE</code>, <code>CPIAUCSL</code>) through the Kaggle and FRED interfaces (Phases 1–2).
+            Carried out the single out-of-time evaluation of the fitted models on the 2015 holdout, reporting PR-AUC, ROC-AUC, Brier score and calibration, with month-block bootstrap intervals, segment and error analysis (Phase 6).
+            Exported the fitted Model B and C parameters, the saved model bundle and the result tables, and verified that the in-browser formula reproduces the Python predictions (Phase 7).</p>
+        </article>
+        <article class="person">
+          <h4>Anish Hongekar <span>25110031</span></h4>
+          <p class="role">Data filtering, preprocessing, feature analysis and website (notebook Phases 3, 4, 5)</p>
+          <p>Defined the binary default target and audited right-censoring by vintage, which fixed the matured 2007–2015 cohort (Phase 3). Filtered the raw table to application-time variables, built the 2-month point-in-time macro merge and the leakage-free preprocessing, and screened the variables for signal by plotting each feature against the default label (Phase 4).
+            Ran the expanding-window validation and the model-selection grids (Phase 5).
+            Also designed and implemented this website: layout and design elements, written content, charts and the interactive explorer.</p>
+        </article>
+      </div>
+    </div>
     <div class="cols">
       <div>
         <h4>Macro Stress Testing on Loan Defaults</h4>
-        <p>ES 335 Machine Learning course project, IIT Gandhinagar. Kunal Kashyap.</p>
+        <p>ES 335 Machine Learning course project, IIT Gandhinagar.<br>Kunal Kashyap (25110177) · Anish Hongekar (25110031)</p>
       </div>
       <div>
         <h4>Project</h4>
@@ -737,7 +755,7 @@
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged figure"><img alt=""></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="assets/data/site-data.js?v=14"></script>
-<script src="assets/js/site.js?v=14"></script>
+<script src="assets/data/site-data.js?v=15"></script>
+<script src="assets/js/site.js?v=15"></script>
 </body>
 </html>

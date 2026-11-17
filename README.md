@@ -2,7 +2,12 @@
 
 **Do macroeconomic conditions known at origination improve retail loan default prediction beyond the borrower's application data?**
 
-ES 335 Machine Learning, IIT Gandhinagar · Kunal Kashyap
+ES 335 Machine Learning, IIT Gandhinagar
+
+| Author | Roll no. | Contribution |
+|---|---|---|
+| Kunal Kashyap | 25110177 | Data acquisition (notebook Phases 1–2); final-model evaluation on the 2015 holdout, bootstrap and error analysis (Phase 6); parameter and result export, browser-parity check (Phase 7) |
+| Anish Hongekar | 25110031 | Target definition and censoring audit (Phase 3); filtering, point-in-time merge, preprocessing, feature-vs-label analysis (Phase 4); cross-validated model selection (Phase 5); website design, content and implementation |
 
 | | |
 |---|---|
