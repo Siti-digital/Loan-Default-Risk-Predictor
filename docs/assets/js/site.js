@@ -85,8 +85,8 @@
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: css('--surface'), titleColor: css('--ink'), bodyColor: css('--text'), borderColor: css('--border'), borderWidth: 1,
-          padding: 10, cornerRadius: 6, boxPadding: 4, titleFont: { family: 'Inter', weight: '600' }, bodyFont: { family: 'Inter' }
+          backgroundColor: css('--navy'), titleColor: '#fcfcfc', bodyColor: 'rgba(241,238,233,0.92)', borderColor: css('--navy'), borderWidth: 0,
+          padding: 11, cornerRadius: 0, boxPadding: 4, titleFont: { family: 'Albert Sans', weight: '700' }, bodyFont: { family: 'Albert Sans' }
         }
       },
       scales: {}
@@ -94,7 +94,7 @@
     return deepMerge(o, extra || {});
   }
   function axis(extra) {
-    return deepMerge({ grid: { color: css('--grid'), drawTicks: false }, border: { display: false }, ticks: { color: css('--muted'), font: { family: 'Inter', size: 11 }, padding: 6 }, title: { color: css('--muted'), font: { family: 'Inter', size: 11 } } }, extra || {});
+    return deepMerge({ grid: { color: css('--grid'), drawTicks: false }, border: { display: false }, ticks: { color: css('--muted'), font: { family: 'Albert Sans', size: 11.5, weight: '500' }, padding: 6 }, title: { color: css('--navy'), font: { family: 'Albert Sans', size: 11.5, weight: '600' } } }, extra || {});
   }
   function deepMerge(a, b) {
     Object.keys(b).forEach(function (k) {
@@ -115,7 +115,7 @@
         ctx.beginPath();
         if (l.axis === 'x') { ctx.moveTo(p, a.top); ctx.lineTo(p, a.bottom); } else { ctx.moveTo(a.left, p); ctx.lineTo(a.right, p); }
         ctx.stroke();
-        if (l.label) { ctx.setLineDash([]); ctx.fillStyle = l.color || css('--muted'); ctx.font = '11px Inter'; ctx.textAlign = l.axis === 'x' ? 'left' : 'right';
+        if (l.label) { ctx.setLineDash([]); ctx.fillStyle = l.color || css('--muted'); ctx.font = '600 11px "Albert Sans", sans-serif'; ctx.textAlign = l.axis === 'x' ? 'left' : 'right';
           if (l.axis === 'x') ctx.fillText(l.label, p + 5, a.top + 12); else ctx.fillText(l.label, a.right - 4, p - 5); }
         ctx.restore();
       });
@@ -138,11 +138,11 @@
   };
   if (window.Chart) {
     Chart.register(refLinePlugin, bandPlugin);
-    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+    Chart.defaults.font.family = '"Albert Sans", system-ui, sans-serif';
     Chart.defaults.elements.line.borderWidth = 2;
     Chart.defaults.elements.point.radius = 0;
     Chart.defaults.elements.point.hoverRadius = 5;
-    Chart.defaults.elements.bar.borderRadius = 4;
+    Chart.defaults.elements.bar.borderRadius = 2;
   }
   function mix(cssVar, alpha) { var c = css(cssVar); return 'color-mix(in srgb, ' + c + ' ' + Math.round(alpha * 100) + '%, transparent)'; }
   function alphaColor(hex, a) {
@@ -204,9 +204,9 @@
     var m = D.monthly, labels = m.map(function (r) { return r.month; });
     var idx = function (mm) { return labels.indexOf(mm); };
     var bands = { ranges: [
-      { from: labels[0], to: '2012-12', color: alphaColor(css('--s-b'), 0.08) },
-      { from: '2013-01', to: '2014-12', color: alphaColor(css('--accent'), 0.1) },
-      { from: '2015-01', to: labels[labels.length - 1], color: alphaColor(css('--s-c'), 0.13) }] };
+      { from: labels[0], to: '2012-12', color: alphaColor(css('--navy'), 0.05) },
+      { from: '2013-01', to: '2014-12', color: alphaColor(css('--lime'), 0.32) },
+      { from: '2015-01', to: labels[labels.length - 1], color: alphaColor(css('--fuchsia'), 0.1) }] };
     var xAxis = function (show) { return axis({ grid: { display: false }, ticks: { display: show, autoSkip: false, maxRotation: 0, callback: function (v, i) { var l = labels[i]; return l && l.slice(5) === '01' ? l.slice(0, 4) : ''; } } }); };
     make('ch-month-dr', { type: 'line', data: { labels: labels, datasets: [{ label: 'Default rate', data: m.map(function (r) { return 100 * r.default_rate; }), borderColor: col('ACTUAL'), loans: m.map(function (r) { return r.loans; }) }] },
       options: baseOpts({ interaction: { mode: 'index', intersect: false }, scales: { x: xAxis(true), y: axis({ beginAtZero: true, title: { display: true, text: 'Default rate, %' } }) }, plugins: { bands: bands,
@@ -533,19 +533,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lb.classList.remove('open'); });
   })();
 
-  // ---------------------------------------------------------------- theme + nav
-  $('#theme-toggle').addEventListener('click', function () {
-    var root = document.documentElement, cur = root.getAttribute('data-theme');
-    var dark = cur ? cur === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var next = dark ? 'light' : 'dark'; root.setAttribute('data-theme', next);
-    try { localStorage.setItem('site-theme', next); } catch (e) { /* storage unavailable */ }
-    builders.forEach(function (fn) { fn(); });
-  });
-  if (window.matchMedia) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)');
-    var onChange = function () { if (!document.documentElement.getAttribute('data-theme')) builders.forEach(function (fn) { fn(); }); };
-    if (mq.addEventListener) mq.addEventListener('change', onChange);
-  }
+  // ---------------------------------------------------------------- nav highlight
   if ('IntersectionObserver' in window) {
     var links = $$('#nav-links a'), map = {};
     links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });

@@ -1,20 +1,22 @@
 # Website design tokens
 
-The project site (`docs/`) uses tokens adapted from a fintech design system in the
-[DesignMD](https://designmd.me/discover) catalogue (retrieved with the DesignMD connector, November 2026).
-Only colours, type scale, radii and shadows were borrowed; no third-party branding is used.
+The project site (`docs/`) follows the visual style of a reference page chosen by the author
+(the recovery calculator at charterflightsupport.com): warm cream canvas, deep navy panels,
+fuchsia highlights, a lime call-to-action, square corners with small fuchsia corner markers,
+and a serif display face over a clean sans. Only colours, type pairing and component shapes
+were borrowed; no logos, imagery or text from that site are used.
 
-| Role | Light | Dark |
-|---|---|---|
-| Ink (headings) | `#0a2540` | `#f0f4fa` |
-| Body text | `#425466` | `#c3cbd9` |
-| Muted text | `#64748d` | `#8b97ab` |
-| Accent (links, active controls) | `#533afd` | `#8f80ff` |
-| Page / alt section / card | `#ffffff` / `#f6f9fc` / `#ffffff` | `#0a1020` / `#0d1528` / `#111b31` |
-| Border | `#e5edf5` | `#1f2b45` |
+| Role | Value |
+|---|---|
+| Canvas / alternate section | `#f1eee9` / `#f7f5f1` |
+| Card surface | `#fcfcfc`, 1px border `#e2e0dc`, radius 0 |
+| Navy (headings, panels) | `#0b1b4d` (inner tiles `#172a63`) |
+| Fuchsia (accent, highlight tiles, markers) | `#ed008c` (text on cream `#c40074`) |
+| Lime (call-to-action, positive tags) | `#cff564` |
+| Body text / muted | `#252d4f` / `#61688a` |
 
-- **Type:** Inter 300–700 (body 16px / 1.65), JetBrains Mono for numbers. The source system's proprietary face is replaced by Inter.
-- **Radii:** 4px controls, 6–8px cards, pill buttons. **Shadows:** two-layer (`rgba(50,50,93,.18) 0 13px 27px -5px, rgba(0,0,0,.16) 0 8px 16px -8px`).
-- **Chart series** (one colour per model, everywhere): actual `#0a2540`, A `#8a8986`, B `#2a78d6`, C `#eb6834`,
-  lender `#1baf7a`, D `#eda100`, D-base `#6250d6`. These slots come from a colour-blind-validated categorical palette.
-  Every chart with two or more series has a legend, and none uses a second y-axis.
+- **Type:** Fraunces 600–700 for headings, big numbers and labels; Albert Sans 400–700 for body, controls and tables (tabular numbers); JetBrains Mono only for code.
+- **Components:** square segmented controls (active = navy fill), bordered chips (selected = navy outline + grey fill), grey-filled inputs, navy result panels with a fuchsia feature tile, 6px fuchsia squares on panel corners and as bullets.
+- **Chart series** (one colour per model in the site and the notebook figures): actual `#0b1b4d`, A `#8a8986`, B `#2a78d6`, C `#d4007d`, D `#eda100`, lender `#1baf7a`, D-base `#6250d6`.
+  B, C, D and lender together pass the colour-vision-deficiency check (all pairs, worst ΔE 9.1 on `#fcfcfc`).
+  Every multi-series chart has a legend, and no chart uses a second y-axis. The site has a single light theme, like the reference.

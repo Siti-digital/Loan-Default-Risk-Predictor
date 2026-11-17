@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Macro Stress Testing on Loan Defaults</title>
   <meta name="description" content="ES 335 project: do national macroeconomic conditions at loan origination improve default prediction beyond borrower data? Out-of-time evaluation on 620,860 LendingClub loans.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23533afd'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ed008c'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/site.css?v=11">
-  <script>
-    try { var t = localStorage.getItem('site-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/site.css?v=14">
 </head>
 <body>
 <a class="sr-only" href="#question">Skip to content</a>
@@ -39,14 +36,13 @@
       <a class="icon-btn" href="https://github.com/Siti-digital/Loan-Default-Risk-Predictor" title="GitHub repository" aria-label="GitHub repository">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
       </a>
-      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-      </button>
+      <a class="nav-cta sq" href="#explorer">Predict</a>
     </div>
   </div>
 </nav>
 
 <header class="hero" id="top">
+  <div class="clouds" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span><span class="cloud c5"></span></div>
   <div class="wrap">
     <div class="hero-top">
       <div class="hero-copy">
@@ -75,11 +71,13 @@
         <p class="predict-caption">Score a borrower with the trained models and change the economy around them</p>
       </div>
     </div>
+    <div class="result-panel frame">
     <div class="kpis">
       <div class="kpi"><div class="v" data-k="cohort_loans">620,860</div><div class="l">matured 36-month loans, 2007–2015</div></div>
-      <div class="kpi"><div class="v" style="font-size:clamp(1.05rem, 0.85rem + 0.8vw, 1.45rem);white-space:nowrap"><span data-k="b_pr4">0.2211</span> → <span data-k="c_pr4">0.2207</span></div><div class="l">PR-AUC on 2015: borrower-only → + macro (no-skill = <span data-k="a_pr">0.149</span>)</div></div>
-      <div class="kpi"><div class="v" data-k="d_pr_cb">−0.0004</div><div class="l">PR-AUC change from adding macro; 95% month-block interval <span data-k="ci_pr_text">−0.0009 to +0.0001</span></div></div>
+      <div class="kpi"><div class="v" style="font-size:clamp(1.25rem, 0.95rem + 0.9vw, 1.7rem);white-space:nowrap"><span data-k="b_pr4">0.2211</span> → <span data-k="c_pr4">0.2207</span></div><div class="l">PR-AUC on 2015: borrower-only → + macro (no-skill = <span data-k="a_pr">0.149</span>)</div></div>
+      <div class="kpi feature"><div class="v" data-k="d_pr_cb">−0.0004</div><div class="l">PR-AUC change from adding macro; 95% month-block interval <span data-k="ci_pr_text">−0.0009 to +0.0001</span></div></div>
       <div class="kpi"><div class="v" data-k="l_pr">0.27</div><div class="l">PR-AUC of the lender-pricing benchmark: the information we lack is borrower-level</div></div>
+    </div>
     </div>
   </div>
 </header>
@@ -219,9 +217,9 @@
       <h3>Default rate and macro inputs by issue month</h3>
       <p class="sub">Each panel has its own scale; shading marks training, the two validation years and the 2015 test year. Hover for values.</p>
       <div class="legend">
-        <span><i class="box" style="background:color-mix(in srgb, var(--s-b) 22%, transparent)"></i>train only</span>
-        <span><i class="box" style="background:color-mix(in srgb, var(--accent) 30%, transparent)"></i>CV validation years</span>
-        <span><i class="box" style="background:color-mix(in srgb, var(--s-c) 32%, transparent)"></i>2015 test</span>
+        <span><i class="box" style="background:rgba(11,27,77,0.08);border:1px solid rgba(11,27,77,0.2)"></i>train only</span>
+        <span><i class="box" style="background:var(--lime-soft);border:1px solid #c9e07a"></i>CV validation years</span>
+        <span><i class="box" style="background:var(--fuchsia-soft);border:1px solid #f5a9d2"></i>2015 test</span>
       </div>
       <div class="chart-box h-md"><canvas id="ch-month-dr"></canvas></div>
       <div class="grid-3" style="margin-top:8px">
@@ -420,7 +418,7 @@
       <div class="grid-2" style="align-items:start">
         <div><div class="chart-box h-md"><canvas id="ch-metric"></canvas></div><p class="chart-note" id="metric-note"></p></div>
         <div class="table-wrap">
-          <table class="data">
+          <table class="data fit compact">
             <thead><tr><th>Model</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th><th class="num">Mean PD</th><th class="num">CV PR-AUC</th></tr></thead>
             <tbody id="holdout-body"></tbody>
           </table>
@@ -640,10 +638,10 @@
         </div>
       </div>
       <div class="stack">
-        <div class="card elev">
+        <div class="result-card">
           <div class="pd-pair">
-            <div class="pd-card"><div class="m"><span class="swatch" style="background:var(--s-b)"></span>Model B · borrower only</div><div class="v" id="pd-b">–</div><div class="bar"><span id="bar-b" style="background:var(--s-b)"></span></div></div>
-            <div class="pd-card"><div class="m"><span class="swatch" style="background:var(--s-c)"></span>Model C · + macro</div><div class="v" id="pd-c">–</div><div class="bar"><span id="bar-c" style="background:var(--s-c)"></span></div></div>
+            <div class="pd-card b"><div class="m">Model B · borrower only</div><div class="v" id="pd-b">–</div><div class="bar"><span id="bar-b" style="background:var(--s-b)"></span></div></div>
+            <div class="pd-card c"><div class="m">Model C · + macro</div><div class="v" id="pd-c">–</div><div class="bar"><span id="bar-c" style="background:var(--s-c)"></span></div></div>
           </div>
           <p class="delta-line" id="pd-delta"></p>
           <p class="chart-note" id="pd-context"></p>
@@ -739,7 +737,7 @@
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged figure"><img alt=""></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="assets/data/site-data.js?v=11"></script>
-<script src="assets/js/site.js?v=11"></script>
+<script src="assets/data/site-data.js?v=14"></script>
+<script src="assets/js/site.js?v=14"></script>
 </body>
 </html>
