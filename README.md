@@ -139,7 +139,6 @@ reports/
   figures/                      All figures used on the website
   maturity_audit_table.csv      Censoring audit by vintage
   pre_phase4_final_audit.md     Design audit written before modelling
-  Macro_Stress_Testing_Master_Defense_Guide.pdf   Personal viva notes from an earlier run (numbers superseded by the notebook)
 docs/                           GitHub Pages site (index.html, assets/css, assets/js, assets/data, assets/figures)
 .github/workflows/deploy-pages.yml   Publishes docs/ to GitHub Pages
 ```
